@@ -1,0 +1,16 @@
+{
+  "language": "typescript",
+  "testFramework": "vitest",
+  "commands": {
+    "typecheck": "npm run typecheck",
+    "lint": "npm run lint",
+    "test": "npx vitest run",
+    "coverage": "npx vitest run --coverage"
+  },
+  "sourceRoots": ["src"],
+  "testRoots": ["tests"],
+  "coverage": { "lines": 80, "branches": 70 },
+  "generation": { "maxRepairAttempts": 3 },
+  "pullRequest": { "baseBranch": "main", "outputMode": "report" },
+  "ignore": []
+}

@@ -1,0 +1,33 @@
+I would want to build my own unit test ai agent that generally supports any programming language, any framework. There are mainly 4 agents:
+1. codebase-analyzer
+analyze the given repo then output the finding to an json file e.g.
+{
+  "language": "typescript",
+  "testFramework": "vitest",
+  "commands": {
+    "typecheck": "npm run typecheck",
+    "lint": "npm run lint",
+    "test": "npx vitest run",
+    "coverage": "npx vitest run --coverage"
+  },
+  "sourceRoots": ["src"],
+  "testRoots": ["tests"],
+  "coverage": { "lines": 80, "branches": 70 },
+  "generation": { "maxRepairAttempts": 3 },
+  "pullRequest": { "baseBranch": "main", "outputMode": "report" },
+  "ignore": []
+}
+If the analyzing does not finding fully information to generate unit tests, report to human so that they can fullfill it.
+
+2. unit-test-generator
+analyze the source code, design test cases, output to json file.
+
+3. unit-test-reviewer
+review test cases designed from the unit-test-generator. Output the finding into a new json file.
+
+4. unit-test-orchestrator
+this agent orchestrates tasks to suitable agents, define workflows e.g.
+unit-test-generator -> unit-test-reviewer -> if approval, unit-test-generator generates tests, if not require unit-test-generator updates.
+This loop retries in a configurable time, default 3 time.
+
+Please review the plan and suggest your ideas.
