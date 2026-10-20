@@ -5,7 +5,7 @@
 - **Depends on:**
   - [F07: JSON Contracts (`schemas/`)](F07-plan.md)
   - [F09: Example Fixtures (`examples/`)](F09-plan.md)
-    _(Per `docs/prompt.md` Step 3: Build F11 after F07 (schemas) and F09 (fixtures) so it can verify agent runs.)_
+    _(Build F11 right after F07 (schemas) and F09 (fixtures) so it can verify agent runs.)_
 
 ## 2. Files to Create or Change
 

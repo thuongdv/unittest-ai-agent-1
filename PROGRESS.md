@@ -8,7 +8,7 @@
 
 - **Current Phase:** Step 3 Ready — **Specs & Plans Approved; Ready to start Task 1 (`F07-T1`) in next session**
 - **Completed Phases:**
-  - [x] Step 0: Expand [`docs/prompt.md`](docs/prompt.md) with `unit-test-failure-analyzer` (F05) and `unit-test-generator --repair-failures` (F06)
+  - [x] Step 0: Define scope including `unit-test-failure-analyzer` (F05) and `unit-test-generator --repair-failures` (F06)
   - [x] Step 1: Research 4 runtimes ([`docs/runtime-compatibility.md`](docs/runtime-compatibility.md)) and record packaging decision ([`docs/decisions/ADR-001-packaging.md`](docs/decisions/ADR-001-packaging.md))
   - [x] Step 2: Author feature specs (`F01`–`F11`), implementation plans (`F01`–`F11`), `PROGRESS.md`, `CLAUDE.md`, and `AGENTS.md` (Approved by user)
 
@@ -56,12 +56,12 @@ Tracks end-to-end verification status (`untested` | `passing (pass_rate)` | `fai
 
 ## 4. Decisions Log
 
-| Date       | ID          | Decision Summary                                                                                                                                                                                                   | Reference                                                                                   |
-| :--------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------ |
-| 2026-10-20 | **DEC-001** | Added `unit-test-failure-analyzer` (`F05`) as a 4th standalone agent supporting both direct test execution (`[targets]`) and log ingestion (`--log <file>`).                                                       | [`docs/prompt.md`](docs/prompt.md), [`F05`](docs/features/F05-failure-analyzer.md)          |
-| 2026-10-20 | **DEC-002** | Added `--repair-failures <run>` (`F06`) as a 3rd mode on `unit-test-generator` that modifies only test files, fixes stale/broken tests, and skips + logs `source_regression_bug` items in `suspectedDefects`.      | [`docs/prompt.md`](docs/prompt.md), [`F06`](docs/features/F06-generator-repair-failures.md) |
-| 2026-10-20 | **ADR-001** | Adopted Canonical `agents/` + Thin Per-Runtime Wrappers (`runtimes/{claude,codex,gemini,copilot}`). Target repos store canonical files in `.unit-test-agent/{agents,schemas}` and copy their runtime's dot-folder. | [`ADR-001`](docs/decisions/ADR-001-packaging.md)                                            |
-| 2026-10-20 | **DEC-003** | Removed legacy root `unittest-ai.example.json` in favor of the canonical `.unit-test-agent/project.json` schema (`schemas/project.schema.json`).                                                                   | [`F07`](docs/features/F07-json-contracts.md)                                                |
+| Date       | ID          | Decision Summary                                                                                                                                                                                                   | Reference                                                              |
+| :--------- | :---------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------------------------------- |
+| 2026-10-20 | **DEC-001** | Added `unit-test-failure-analyzer` (`F05`) as a 4th standalone agent supporting both direct test execution (`[targets]`) and log ingestion (`--log <file>`).                                                       | [`F05`](docs/features/F05-failure-analyzer.md)                         |
+| 2026-10-20 | **DEC-002** | Added `--repair-failures <run>` (`F06`) as a 3rd mode on `unit-test-generator` that modifies only test files, fixes stale/broken tests, and skips + logs `source_regression_bug` items in `suspectedDefects`.      | [`F06`](docs/features/F06-generator-repair-failures.md)                |
+| 2026-10-20 | **ADR-001** | Adopted Canonical `agents/` + Thin Per-Runtime Wrappers (`runtimes/{claude,codex,gemini,copilot}`). Target repos store canonical files in `.unit-test-agent/{agents,schemas}` and copy their runtime's dot-folder. | [`ADR-001`](docs/decisions/ADR-001-packaging.md)                       |
+| 2026-10-20 | **DEC-003** | Removed legacy root `unittest-ai.example.json` and initial bootstrap `docs/prompt.md` after decomposing all specs, guardrails, and plans into `docs/features/`, `docs/plans/`, and `AGENTS.md`.                    | [`F07`](docs/features/F07-json-contracts.md), [`AGENTS.md`](AGENTS.md) |
 
 ---
 
@@ -74,7 +74,7 @@ _(None — all questions resolved.)_
 ## 6. Changelog
 
 - **2026-10-20:**
-  - Updated [`docs/prompt.md`](docs/prompt.md) with `unit-test-failure-analyzer` (`F05`) and `unit-test-generator --repair-failures` (`F06`).
+  - Defined scope for all 4 agents including `unit-test-failure-analyzer` (`F05`) and `unit-test-generator --repair-failures` (`F06`).
   - Completed Step 1 runtime research in [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md) and [`docs/decisions/ADR-001-packaging.md`](docs/decisions/ADR-001-packaging.md).
   - Completed Step 2 specifications (`docs/features/F01..F11`), implementation plans (`docs/plans/F01..F11`), `PROGRESS.md`, `CLAUDE.md`, and `AGENTS.md`.
-  - Approved `ADR-001` packaging architecture, removed legacy `unittest-ai.example.json`, and marked project ready for Step 3 implementation.
+  - Approved `ADR-001` packaging architecture, removed legacy `unittest-ai.example.json` and bootstrap `docs/prompt.md`, and marked project ready for Step 3 implementation.
