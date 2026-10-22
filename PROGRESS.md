@@ -78,3 +78,5 @@ _(None — all questions resolved.)_
   - Completed Step 1 runtime research in [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md) and [`docs/decisions/ADR-001-packaging.md`](docs/decisions/ADR-001-packaging.md).
   - Completed Step 2 specifications (`docs/features/F01..F11`), implementation plans (`docs/plans/F01..F11`), `PROGRESS.md`, `CLAUDE.md`, and `AGENTS.md`.
   - Approved `ADR-001` packaging architecture, removed legacy `unittest-ai.example.json` and bootstrap `docs/prompt.md`, and marked project ready for Step 3 implementation.
+- **2026-10-22:**
+  - Added high-level user-facing feature overview [`docs/users/features-overview.html`](docs/users/features-overview.html) (workflows, agents, guardrails, failure triage, runtimes, install, QA, roadmap) with Mermaid diagrams.

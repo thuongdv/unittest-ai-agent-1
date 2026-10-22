@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unit Test Agents Overview</title>
+<meta name="description" content="High-level summary of the features delivered by the unit test AI agents project.">
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --surface-2: #f0efeb; --text: #1d1d1b; --muted: #5f5e5a;
+    --border: #dddcd6; --accent: #2f5bd3; --accent-soft: #e6ecfb;
+    --ok: #1f7a4d; --ok-soft: #e3f3ea; --warn: #9a5b00; --warn-soft: #fbf0dc; --bad: #b42318; --bad-soft: #fbe7e5;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1e1e1c; --surface-2: #262624; --text: #ecebe6; --muted: #a3a29c;
+      --border: #3a3936; --accent: #8aa8ff; --accent-soft: #233057;
+      --ok: #5fcf95; --ok-soft: #1c3529; --warn: #f0b45a; --warn-soft: #3a2d17; --bad: #ff8a7f; --bad-soft: #3d1f1c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1e1e1c; --surface-2: #262624; --text: #ecebe6; --muted: #a3a29c;
+    --border: #3a3936; --accent: #8aa8ff; --accent-soft: #233057;
+    --ok: #5fcf95; --ok-soft: #1c3529; --warn: #f0b45a; --warn-soft: #3a2d17; --bad: #ff8a7f; --bad-soft: #3d1f1c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font-size: 2.1rem; line-height: 1.2; margin: 0 0 12px; letter-spacing: -0.01em; }
+  h2 { font-size: 1.4rem; margin: 56px 0 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 1.05rem; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .lede { font-size: 1.1rem; color: var(--muted); max-width: 760px; }
+  .muted { color: var(--muted); }
+  code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+  a { color: var(--accent); }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+  nav.toc a { font-size: 0.85rem; text-decoration: none; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); }
+  .status { display: inline-block; font-size: 0.8rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); margin-bottom: 14px; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 28px 0 0; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .stat b { display: block; font-size: 1.8rem; line-height: 1.1; }
+  .stat span { font-size: 0.85rem; color: var(--muted); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 14px; margin-top: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+  .card .id { font-family: var(--mono); font-size: 0.75rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); padding: 2px 7px; border-radius: 4px; }
+  .card .cmd { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); margin: 8px 0; word-break: break-word; }
+  .card ul { margin: 8px 0 0; padding-left: 18px; }
+  .card li { margin-bottom: 4px; font-size: 0.93rem; }
+  .card .out { margin-top: 10px; font-size: 0.82rem; color: var(--muted); }
+
+  .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin: 16px 0; overflow-x: auto; }
+  .diagram .mermaid { min-width: 560px; text-align: center; }
+  .diagram figcaption { font-size: 0.85rem; color: var(--muted); margin-top: 10px; }
+
+  .table-wrap { overflow-x: auto; margin: 16px 0; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .chip { display: inline-block; font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); }
+  .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.bad { background: var(--bad-soft); color: var(--bad); }
+
+  .guards { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 10px; }
+  .guards li { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--ok); border-radius: 8px; padding: 10px 14px; }
+
+  .roadmap { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; counter-reset: step; }
+  .phase { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; position: relative; }
+  .phase::before { counter-increment: step; content: counter(step); position: absolute; top: 10px; right: 12px; font-weight: 700; color: var(--muted); }
+  .phase b { display: block; font-size: 0.95rem; margin-bottom: 4px; }
+  .phase span { font-size: 0.82rem; color: var(--muted); }
+
+  pre.tree { font-family: var(--mono); font-size: 0.82rem; line-height: 1.5; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; overflow-x: auto; margin: 16px 0; }
+  footer { margin-top: 64px; font-size: 0.85rem; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <span class="status">Status (2026-10-22): specs &amp; plans approved · implementation not started</span>
+  <h1>Unit Test AI Agents: what this project delivers</h1>
+  <p class="lede">Four AI coding agents that analyze a repository, write unit tests, review them, and repair failing tests. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions: there are no scripts and no install step beyond copying files.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#workflows">Workflows</a>
+    <a href="#agents">Agents</a>
+    <a href="#guardrails">Guardrails</a>
+    <a href="#failures">Failure triage</a>
+    <a href="#review">Review rubric</a>
+    <a href="#runtimes">Runtimes &amp; languages</a>
+    <a href="#install">Installation</a>
+    <a href="#quality">Quality assurance</a>
+    <a href="#roadmap">Roadmap</a>
+  </nav>
+  <div class="stats">
+    <div class="stat"><b>4</b><span>agents</span></div>
+    <div class="stat"><b>3</b><span>generator modes</span></div>
+    <div class="stat"><b>4</b><span>AI runtimes</span></div>
+    <div class="stat"><b>6</b><span>language ecosystems</span></div>
+    <div class="stat"><b>5</b><span>JSON schemas</span></div>
+    <div class="stat"><b>11</b><span>automated output checks</span></div>
+  </div>
+</header>
+
+<section id="workflows">
+  <h2>Two workflows, chained by hand</h2>
+  <p>There is no orchestrator. You run each command and pass the <code>run-id</code> printed by the previous step to the next one. Each step writes a JSON file under <code>.unit-test-agent/</code> that the next step reads.</p>
+
+  <h3>Workflow 1: generate, review, and fix new tests</h3>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  A["/codebase-analyzer"] -->|project.json| B["/unit-test-generator #lt;targets#gt;"]
+  B -->|generation.json| C["/unit-test-reviewer #lt;run-id#gt;"]
+  C -->|review.json| D{verdict}
+  D -->|approved| E(["Done"])
+  D -->|changes_requested| F["/unit-test-generator --fix #lt;run-id#gt;"]
+  F -->|generation.rN.json| C
+    </pre>
+    <figcaption>The review and fix loop repeats until the reviewer approves. Each fix pass writes a new revision (r1, r2, …).</figcaption>
+  </figure>
+
+  <h3>Workflow 2: diagnose and repair failing tests</h3>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  A["/unit-test-failure-analyzer<br/>targets or --log file"] -->|failure-analysis.json| B["/unit-test-generator<br/>--repair-failures #lt;run-id#gt;"]
+  B -->|failure-repair.json| C(["Suite green:<br/>passing + skipped defects"])
+    </pre>
+    <figcaption>Use this after a regression, a refactor, or a red CI build. The analyzer can run the tests itself or read an existing CI log.</figcaption>
+  </figure>
+</section>
+
+<section id="agents">
+  <h2>The agents</h2>
+  <p>All four agents need <code>.unit-test-agent/project.json</code>, which the analyzer writes. The three agents after the analyzer stop at once if that file is missing, has an unsupported version, or still has a blocking open question.</p>
+  <div class="grid">
+    <article class="card">
+      <span class="id">F01</span>
+      <h3>Codebase Analyzer</h3>
+      <div class="cmd">/codebase-analyzer [subproject]</div>
+      <ul>
+        <li>Detects language, package manager, test framework, mocking library, and coverage and mutation tools</li>
+        <li>Finds the install, typecheck, lint, test, coverage, and mutation commands</li>
+        <li>Runs the existing tests once to record a baseline</li>
+        <li>Records a confidence level and the evidence for each detected value</li>
+        <li>Lists open questions as blocking or non-blocking</li>
+        <li>Keeps your manual edits when you run it again</li>
+      </ul>
+      <div class="out">Writes <code>project.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F02</span>
+      <h3>Generator: Generate mode</h3>
+      <div class="cmd">/unit-test-generator &lt;targets&gt;</div>
+      <ul>
+        <li>Writes happy-path, edge, boundary, and error test cases</li>
+        <li>Copies the style of your existing test files</li>
+        <li>Fixes its own broken tests, up to a set number of attempts</li>
+        <li>Keeps adding tests until the coverage thresholds are met</li>
+        <li>Explains every line it could not cover</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/generation.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F03</span>
+      <h3>Generator: Fix mode</h3>
+      <div class="cmd">/unit-test-generator --fix &lt;run-id&gt;</div>
+      <ul>
+        <li>Changes only the tests the reviewer flagged</li>
+        <li>Replaces weak assertions with stronger ones</li>
+        <li>Adds tests that catch surviving mutants and cover missed branches</li>
+        <li>Never deletes an assertion to clear a finding</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/generation.r&lt;N&gt;.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F04</span>
+      <h3>Test Reviewer</h3>
+      <div class="cmd">/unit-test-reviewer &lt;run-id&gt;</div>
+      <ul>
+        <li>Runs in a fresh subagent, so it starts without the generator's reasoning</li>
+        <li>Checks every test case against a 7-point rubric</li>
+        <li>Runs mutation testing on the target files when a mutation tool is configured</li>
+        <li>Runs the new tests 3 times to catch flaky ones</li>
+        <li>Never edits code</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/review.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F05</span>
+      <h3>Failure Analyzer</h3>
+      <div class="cmd">/unit-test-failure-analyzer [targets | --log file]</div>
+      <ul>
+        <li>Runs the failing tests, or reads an existing log</li>
+        <li>Reads the test, the source code, and recent git history</li>
+        <li>Puts each failure in one of 6 root-cause categories, with evidence</li>
+        <li>When it cannot tell, assumes a source bug so a valid test is never rewritten</li>
+        <li>Never edits code</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/failure-analysis.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F06</span>
+      <h3>Generator: Repair-Failures mode</h3>
+      <div class="cmd">/unit-test-generator --repair-failures &lt;run-id&gt;</div>
+      <ul>
+        <li>Fixes outdated tests, broken mocks, flaky tests, and import errors</li>
+        <li>Keeps the assertions of tests that caught a real bug, and marks those tests as skipped</li>
+        <li>Records environment problems without changing any file</li>
+        <li>Runs the tests again to confirm the suite passes</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/failure-repair.json</code></div>
+    </article>
+  </div>
+
+  <h3 style="margin-top:28px">Inside Generate mode</h3>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart TD
+  P["Check preconditions"] --> T["Read targets + style exemplars"]
+  T --> D["Design cases:<br/>happy path · edge · boundary · error"]
+  D --> W["Write tests under testRoots only"]
+  W --> R["Run tests"]
+  R -->|test is wrong| X["Repair test<br/>(≤ maxRepairAttempts)"] --> R
+  R -->|source is wrong| S["Keep assertion · mark skipped<br/>· record suspected defect"] --> C
+  R -->|pass| C["Run scoped coverage"]
+  C -->|below threshold| D
+  C -->|met, or remaining lines explained| O["Write generation.json"]
+    </pre>
+    <figcaption>When a new test fails, the generator first decides whether the test or the source code is wrong. Only a wrong test gets edited.</figcaption>
+  </figure>
+</section>
+
+<section id="guardrails">
+  <h2>Guardrails</h2>
+  <p>Every agent follows these rules. The automated checks (F11) verify them after each evaluation run.</p>
+  <ul class="guards">
+    <li><b>Production code is never modified.</b> Agents write only under the configured test folders and <code>.unit-test-agent/</code>.</li>
+    <li><b>Failing tests are never "fixed" by weakening them.</b> An agent never deletes or loosens an assertion, and never changes an expected value to match buggy output.</li>
+    <li><b>Bugs found in your code are reported.</b> The agent keeps the correct assertion, marks the test as skipped or expected-to-fail using the framework's own mechanism, and records the bug in <code>suspectedDefects</code> with the expected and actual behavior.</li>
+    <li><b>Agents check before they act.</b> If configuration is missing, a schema version is unsupported, or a blocking question is unanswered, the agent stops and tells you what to do.</li>
+    <li><b>Every output can be traced.</b> Each JSON file records its schema version, the agent that wrote it, a timestamp, and a run ID.</li>
+  </ul>
+</section>
+
+<section id="failures">
+  <h2>Failure triage: how a red test gets resolved</h2>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  F(["Failing test"]) --> A1["stale_test"]
+  F --> A2["broken_mock_or_fixture"]
+  F --> A3["flaky_or_nondeterministic"]
+  F --> A4["syntax_or_import_error"]
+  F --> B1["source_regression_bug"]
+  F --> C1["environment_or_dependency"]
+  A1 & A2 & A3 & A4 --> OK["Test repaired<br/>status: fixed"]
+  B1 --> SK["Assertion kept · test skipped<br/>status: skipped_defect"]
+  C1 --> BL["No files changed<br/>status: blocked_env"]
+    </pre>
+  </figure>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Category</th><th>Meaning</th><th>Action</th><th>Outcome</th></tr></thead>
+      <tbody>
+        <tr><td><code>stale_test</code></td><td>The source contract changed on purpose, and the change is documented. The test is out of date.</td><td>Update the test</td><td><span class="chip ok">fixed</span></td></tr>
+        <tr><td><code>broken_mock_or_fixture</code></td><td>A mock or fixture no longer matches the real interface.</td><td>Fix the mock or setup</td><td><span class="chip ok">fixed</span></td></tr>
+        <tr><td><code>flaky_or_nondeterministic</code></td><td>Timing, randomness, the clock, or test order changes the result.</td><td>Stabilize the test</td><td><span class="chip ok">fixed</span></td></tr>
+        <tr><td><code>syntax_or_import_error</code></td><td>A broken import or a compile error.</td><td>Update the test (if the error is in the test file)</td><td><span class="chip ok">fixed</span></td></tr>
+        <tr><td><code>source_regression_bug</code></td><td>The test is right and the production code is wrong.</td><td>Skip the test and report the defect</td><td><span class="chip warn">skipped_defect</span></td></tr>
+        <tr><td><code>environment_or_dependency</code></td><td>A missing dependency, environment variable, or service.</td><td>Fix the environment (you do this)</td><td><span class="chip bad">blocked_env</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">A <code>stale_test</code> classified with low confidence is handled as a source bug, so a real regression is never hidden.</p>
+</section>
+
+<section id="review">
+  <h2>Review rubric</h2>
+  <p>The reviewer checks every test case against seven criteria and rates each finding critical, major, or minor. It requests changes if any finding is critical or major, if any test is flaky, or if a mutant survives that a test could have caught.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>#</th><th>Criterion</th><th>What it catches</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>missing_branch_or_edge_case</code></td><td>Branches, error paths, or boundary values that no test checks</td></tr>
+        <tr><td>2</td><td><code>duplicate_case</code></td><td>Two tests that cover the same code path with the same kind of input</td></tr>
+        <tr><td>3</td><td><code>implementation_detail_coupling</code></td><td>Tests that assert private state or call counts instead of observable results</td></tr>
+        <tr><td>4</td><td><code>over_mocking</code></td><td>Mocks of pure helpers or value objects that did not need mocking</td></tr>
+        <tr><td>5</td><td><code>non_determinism</code></td><td>Real clocks, unseeded randomness, real network or file I/O, or state shared between tests</td></tr>
+        <tr><td>6</td><td><code>weak_or_tautological_assertion</code></td><td>Assertions like <code>toBeDefined()</code> or <code>assert True</code>, or checking that a mock returns what it was set up to return</td></tr>
+        <tr><td>7</td><td><code>naming_and_style_mismatch</code></td><td>Tests that do not follow the conventions of your existing test files</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="runtimes">
+  <h2>Supported runtimes and languages</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Runtime</th><th>How you invoke it</th><th>Headless</th><th>Fresh-context reviewer</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code</td><td><code>/codebase-analyzer</code></td><td><code>claude -p "…"</code></td><td>Subagent in <code>.claude/agents/</code></td></tr>
+        <tr><td>OpenAI Codex CLI</td><td><code>$codebase-analyzer</code></td><td><code>codex exec "…"</code></td><td>Subagent in <code>.codex/agents/</code></td></tr>
+        <tr><td>Gemini CLI</td><td><code>/codebase-analyzer</code></td><td><code>gemini -p "…"</code></td><td>Subagent in <code>.gemini/agents/</code></td></tr>
+        <tr><td>GitHub Copilot (VS Code)</td><td><code>/codebase-analyzer</code></td><td>Not available (Agent Mode only)</td><td><code>runSubagent</code> with <code>.github/agents/</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Ecosystem</th><th>Test framework</th><th>Mocking</th><th>Coverage</th><th>Mutation</th></tr></thead>
+      <tbody>
+        <tr><td>JS / TS</td><td>Vitest, Jest</td><td>vi, jest</td><td>v8 / istanbul</td><td>Stryker</td></tr>
+        <tr><td>Python</td><td>pytest, unittest</td><td>unittest.mock</td><td>coverage.py</td><td>mutmut</td></tr>
+        <tr><td>Java / Kotlin</td><td>JUnit 5</td><td>Mockito, MockK</td><td>JaCoCo</td><td>PIT</td></tr>
+        <tr><td>C# / .NET</td><td>xUnit, NUnit, MSTest</td><td>Moq, NSubstitute</td><td>Coverlet</td><td>Stryker.NET</td></tr>
+        <tr><td>Go</td><td>go test</td><td>testify</td><td>-coverprofile</td><td>go-mutesting, gremlins</td></tr>
+        <tr><td>Rust</td><td>cargo test</td><td>mockall</td><td>cargo-llvm-cov, tarpaulin</td><td>cargo-mutants</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Mutation testing is optional. When no mutation tool is configured, the reviewer skips that step and the review still completes.</p>
+</section>
+
+<section id="install">
+  <h2>Installation: copy two folders</h2>
+  <p>Each agent's instructions are stored in one place. Each runtime gets a 5–15 line wrapper that points to those instructions, so changing a rule means editing one file.</p>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  subgraph canon[".unit-test-agent/"]
+    AG["agents/*.md<br/>(4 canonical instruction files)"]
+    SC["schemas/*.schema.json<br/>(5 contracts)"]
+  end
+  CL[".claude/ commands + subagent"] --> AG
+  CX[".agents/skills + .codex/agents"] --> AG
+  GM[".gemini/ commands (.toml) + subagent"] --> AG
+  GH[".github/ prompts + agent"] --> AG
+    </pre>
+    <figcaption>A team can commit wrappers for several runtimes side by side. They all point to the same instruction files.</figcaption>
+  </figure>
+<pre class="tree">mkdir -p &lt;repo&gt;/.unit-test-agent
+cp -r agents schemas &lt;repo&gt;/.unit-test-agent/
+cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copilot
+
+&lt;repo&gt;/.unit-test-agent/
+├── agents/            # instructions (commit)
+├── schemas/           # JSON contracts (commit)
+├── project.json       # written by the analyzer; edit freely (commit)
+└── runs/&lt;run-id&gt;/     # per-run reports (optionally gitignored)
+    ├── generation.json · generation.r1.json · review.json
+    └── failure-analysis.json · failure-repair.json</pre>
+  <p>You can tune <code>project.json</code>, for example the coverage thresholds (up to 100%) and <code>maxRepairAttempts</code>. Running the analyzer again keeps your edits.</p>
+</section>
+
+<section id="quality">
+  <h2>How the project tests its own agents</h2>
+  <div class="grid">
+    <article class="card">
+      <span class="id">F07</span>
+      <h3>JSON contracts</h3>
+      <ul>
+        <li>5 JSON Schema (Draft 2020-12) files, one per output type</li>
+        <li>Strict: an unknown field fails validation, so a typo in a field name is caught</li>
+        <li>Every detected value records a confidence level and its evidence</li>
+      </ul>
+    </article>
+    <article class="card">
+      <span class="id">F09</span>
+      <h3>Example fixtures</h3>
+      <ul>
+        <li><code>examples/ts-vitest</code> and <code>examples/py-pytest</code></li>
+        <li>Each one contains a deliberate bug, an unreachable guard, and seeded failing tests (one stale test and one real regression)</li>
+        <li>Includes a sample CI log and a manual test procedure</li>
+      </ul>
+    </article>
+    <article class="card">
+      <span class="id">F11</span>
+      <h3>Automated output checks</h3>
+      <ul>
+        <li>A Vitest package for contributors that inspects the outputs and git state after a run</li>
+        <li>Runs the same 11 checks for every runtime</li>
+        <li>Reports the pass rate across repeated runs</li>
+      </ul>
+    </article>
+    <article class="card">
+      <span class="id">F08 · F10</span>
+      <h3>Packaging &amp; user guide</h3>
+      <ul>
+        <li>Thin wrappers for all 4 agents in all 4 runtimes</li>
+        <li>A README with installation commands for each runtime, both workflows, and how to customize the agents</li>
+      </ul>
+    </article>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Check</th><th>What it verifies</th></tr></thead>
+      <tbody>
+        <tr><td>CHK-01</td><td>Every output matches its schema and has the required envelope fields</td></tr>
+        <tr><td>CHK-02</td><td>The analyzer detects the fixture's language, framework, and commands correctly</td></tr>
+        <tr><td>CHK-03</td><td>Git shows no changes outside the test folders</td></tr>
+        <tr><td>CHK-04</td><td>The deliberate bug is reported, and its test is skipped rather than weakened</td></tr>
+        <tr><td>CHK-05</td><td>Reported coverage is within ±2% of the actual coverage</td></tr>
+        <tr><td>CHK-06</td><td>Every reviewer finding refers to a test case that exists</td></tr>
+        <tr><td>CHK-07</td><td>Fix mode changes only flagged files and removes no assertions</td></tr>
+        <tr><td>CHK-08</td><td>The failure analyzer tells a stale test apart from a regression bug</td></tr>
+        <tr><td>CHK-09</td><td>Repair mode fixes the stale test, skips the bug's test, and the suite passes</td></tr>
+        <tr><td>CHK-10</td><td>Running the analyzer again keeps manual edits to <code>project.json</code></td></tr>
+        <tr><td>CHK-11</td><td>A blocking question in <code>project.json</code> stops the downstream agents</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="roadmap">
+  <h2>Delivery roadmap</h2>
+  <p>The work is ordered so that each piece can be tested as soon as it is built. The schemas and fixtures come first, then the automated checks, and then the agents that the checks verify.</p>
+  <div class="roadmap">
+    <div class="phase"><b>Contracts</b><span>F07: 5 JSON schemas</span></div>
+    <div class="phase"><b>Fixtures</b><span>F09: TS + Python sample repos</span></div>
+    <div class="phase"><b>Verifier</b><span>F11: 11 automated checks</span></div>
+    <div class="phase"><b>Agents</b><span>F01–F06: 4 agents, 3 generator modes</span></div>
+    <div class="phase"><b>Runtimes</b><span>F08: wrappers for Claude, Codex, Gemini, Copilot</span></div>
+    <div class="phase"><b>End-to-end</b><span>Each agent verified on each runtime</span></div>
+    <div class="phase"><b>Guide</b><span>F10: README</span></div>
+  </div>
+  <p class="muted" style="margin-top:14px">See <a href="../../PROGRESS.md">PROGRESS.md</a> for live task status and the per-runtime verification matrix.</p>
+</section>
+
+<footer>
+  Sources: <a href="../features/">docs/features/</a> (F01–F11) · <a href="../decisions/ADR-001-packaging.md">ADR-001</a> · <a href="../runtime-compatibility.md">runtime-compatibility.md</a>.<br>
+  To add a diagram, add a <code>&lt;pre class="mermaid"&gt;</code> block. It renders automatically.
+</footer>
+
+</main>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  const dark = document.documentElement.dataset.theme === "dark" ||
+    (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "strict", deterministicIds: true, flowchart: { htmlLabels: true, curve: "basis" } });
+</script>
+</body>
+</html>
