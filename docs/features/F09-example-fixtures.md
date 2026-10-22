@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Provide two small, self-contained, realistic fixture repositories in `examples/`—one in **TypeScript + Vitest** (`examples/ts-vitest/`) and one in **Python + pytest** (`examples/py-pytest/`)—along with a repeatable manual verification procedure to test all four agents end-to-end across all four runtimes.
+Provide two small, self-contained, realistic fixture repositories in `examples/`—one in **TypeScript + Vitest** (`examples/ts-vitest/`) and one in **Python + pytest** (`examples/py-pytest/`)—along with a repeatable manual verification procedure to test all four agents and the orchestrator end-to-end across all four runtimes.
 
 ---
 
@@ -89,6 +89,10 @@ examples/py-pytest/
    - Verify `failure-analysis.json` classifies the stale test as `stale_test` (`update_test`) and the pricing bug test as `source_regression_bug` (`skip_and_report_defect`).
    - Run `/unit-test-generator --repair-failures <failure-run-id>`.
    - Verify `failure-repair.json` shows the stale test fixed, the regression test marked skipped with `suspectedDefects` populated, and re-running the test file exits with code 0.
+6. **Step E — Test `unit-test-orchestrator` (F12):**
+   - Reset the sandbox to the baseline commit (keep `project.json`), run `/unit-test-orchestrator src/pricing.ts`, and verify Steps B–C outputs appear under one `<run-id>` with at most 2 `generation.r*.json` files.
+   - Run `/unit-test-orchestrator --failures tests/regression/order.failing.ts` and verify Step D outputs appear under one `<run-id>`.
+   - Delete `project.json`, run the orchestrator again, and verify it stops with a pointer to `/codebase-analyzer` and creates no `runs/` directory.
 
 ---
 
@@ -103,4 +107,4 @@ examples/py-pytest/
 
 - [ ] `examples/ts-vitest/` and `examples/py-pytest/` exist and pass baseline tests out of the box.
 - [ ] Both fixtures include branching logic, an unreachable defensive branch, at least one deliberate bug in production code, and seeded failing tests (`stale_test` + `source_regression_bug`) plus a sample `.log` file.
-- [ ] Manual test procedure covers all 4 agents and all 3 generator modes (`generate`, `--fix`, `--repair-failures`) end-to-end.
+- [ ] Manual test procedure covers all 4 agents, all 3 generator modes (`generate`, `--fix`, `--repair-failures`), and both orchestrator workflows end-to-end.

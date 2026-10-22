@@ -16,9 +16,10 @@ Every session working on this repository **MUST** begin with these steps:
 - **No helper code in the agents:** Deliverables installed into user repositories are strictly `.md` instruction files, `.json` / `.schema.json` files, and the thinnest runtime wrapper files (`.toml` for Gemini CLI, `.prompt.md` / `.agent.md` for Copilot, `SKILL.md` for Codex, `.md` for Claude Code). Never write `.js`, `.ts`, `.py`, or `.sh` scripts for the agents themselves.
   - _Exception:_ Developer evaluation tooling in `evals/` (`F11`) and test fixtures in `examples/` (`F09`) contain TypeScript/Python code used exclusively to test this repository.
 - **Agents use the target repo's tooling:** Agents do their work by running the target repo's own commands (install, typecheck, lint, test, coverage, mutation).
-- **No orchestrator:** The user chains the agents by hand:
-  - Generation & review flow: `/codebase-analyzer` → `/unit-test-generator <targets>` → `/unit-test-reviewer <run>` → `/unit-test-generator --fix <run>`
-  - Regression / failure repair flow: `/unit-test-failure-analyzer [targets | --log <file>]` → `/unit-test-generator --repair-failures <run>`
+- **One-time setup:** `/codebase-analyzer` runs once per repository (and again only when its tooling changes). It is never part of a workflow; downstream agents stop if `project.json` is missing.
+- **Orchestrator sequences only (`F12`):** `/unit-test-orchestrator` runs a whole workflow from one command. It delegates to the canonical agents, branches only on their JSON outputs, writes no files of its own, never runs `/codebase-analyzer`, and holds zero test-writing/review/analysis rules. Each agent stays directly invocable:
+  - Generation & review flow: `/unit-test-orchestrator <targets>` = `/unit-test-generator <targets>` → (`/unit-test-reviewer <run>` → `/unit-test-generator --fix <run>`) repeated until approved or `--max-review-rounds` (default 3)
+  - Regression / failure repair flow: `/unit-test-orchestrator --failures [targets | --log <file>]` = `/unit-test-failure-analyzer [targets | --log <file>]` → `/unit-test-generator --repair-failures <run>`
 - **Core agent guardrails (must be enforced in `agents/*.md`):**
   - Write only under configured `testRoots` (and `.unit-test-agent/`). Never modify production source files.
   - Never make a failing test pass by deleting or loosening an assertion, or by changing the expected value to whatever buggy output the code returned.

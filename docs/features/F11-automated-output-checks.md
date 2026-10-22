@@ -127,6 +127,13 @@ EVAL_RUN_DIRS="/tmp/ut-eval-run-1,/tmp/ut-eval-run-2,/tmp/ut-eval-run-3" EVAL_FI
       "passedRuns": 3,
       "totalRuns": 3,
       "passRate": 1.0
+    },
+    {
+      "checkId": "CHK-12",
+      "name": "Orchestrator respects review-round cap and analyzer boundary",
+      "passedRuns": 3,
+      "totalRuns": 3,
+      "passRate": 1.0
     }
   ]
 }
@@ -164,6 +171,10 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
     - Verifies that after a custom value (e.g., `policy.coverageThresholds.lines = 91` or custom `commands.lint.value`) was written to `project.json` prior to re-running `codebase-analyzer`, the post-run `project.json` still retains that exact user value.
 11. **`CHK-11` Precondition Blocking Check (`preconditions.eval.test.ts`):**
     - Verifies that when `project.json` contains a `missing` item with `blocking: true` (or an unsupported `schemaVersion: "99.0.0"`), invoking downstream agents writes **no** `generation.json`/`review.json`/`failure-analysis.json` and leaves `testRoots` untouched.
+12. **`CHK-12` Orchestrator Sequencing (`orchestrator.eval.test.ts`):**
+    - For a Workflow A run: asserts `generation.json` and `review.json` exist under one `<run-id>`, the count of `generation.r*.json` is at most `maxReviewRounds - 1` (default `2`), and no `generation.r*.json` was written after a `review.json` with `verdict: "approved"`.
+    - For a Workflow B run: asserts `failure-analysis.json` and `failure-repair.json` share one `<run-id>`, and that `failure-repair.json` is absent when `analyzedFailures == 0`.
+    - For a run with `project.json` removed: asserts no `runs/` directory and no `project.json` were created (the analyzer was not invoked).
 
 ---
 
@@ -177,6 +188,6 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
 ## 6. Acceptance Criteria Checklist
 
 - [ ] `evals/` is a standalone TypeScript + Vitest package with zero coupling to user-installed agent files.
-- [ ] Implements all 11 property checks (`CHK-01` through `CHK-11`) covering all 4 agents and all 3 generator modes.
+- [ ] Implements all 12 property checks (`CHK-01` through `CHK-12`) covering all 4 agents, all 3 generator modes, and the orchestrator.
 - [ ] Includes unit self-tests (using mock run directories) so `npm --prefix evals test:self` verifies the evaluator logic itself.
 - [ ] Supports evaluating multiple run directories and reporting a pass rate across runs.

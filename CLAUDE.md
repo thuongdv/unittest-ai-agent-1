@@ -8,8 +8,8 @@
 2. **Specifications & Plans:**
    - Runtime research: [`docs/runtime-compatibility.md`](docs/runtime-compatibility.md)
    - Packaging ADR: [`docs/decisions/ADR-001-packaging.md`](docs/decisions/ADR-001-packaging.md)
-   - Feature specs (`F01`–`F11`): `docs/features/`
-   - Implementation plans (`F01`–`F11`): `docs/plans/`
+   - Feature specs (`F01`–`F12`): `docs/features/`
+   - Implementation plans (`F01`–`F12`): `docs/plans/`
 3. **After every completed task:**
    - Update task status and changelog in [`PROGRESS.md`](PROGRESS.md).
    - Commit with a Conventional Commit message (`feat:`, `docs:`, `test:`, `chore:`).

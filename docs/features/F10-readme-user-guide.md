@@ -18,7 +18,7 @@ N/A (Documentation artifact at `README.md`).
 
 - [docs/runtime-compatibility.md](../runtime-compatibility.md)
 - [docs/decisions/ADR-001-packaging.md](../decisions/ADR-001-packaging.md)
-- Feature specifications `F01`–`F09` and `F11`
+- Feature specifications `F01`–`F09`, `F11`, and `F12`
 
 ### Output
 
@@ -33,19 +33,19 @@ N/A (Documentation artifact at `README.md`).
 3. **Installation (Copy-Based, No Install Script):**
    - Exact `cp -r` commands for copying `agents/` and `schemas/` into `.unit-test-agent/` and copying the chosen runtime wrapper from `runtimes/<runtime>/`.
    - Recommendation on what to commit vs. ignore in `.gitignore` (commit `.unit-test-agent/project.json`, `.unit-test-agent/agents/`, `.unit-test-agent/schemas/`; optionally ignore `.unit-test-agent/runs/`).
-4. **Workflow 1: Analyzing, Generating, Reviewing & Fixing Unit Tests:**
-   - Step 1: `/codebase-analyzer` → `.unit-test-agent/project.json`
-   - Step 2: `/unit-test-generator <targets>` → `.unit-test-agent/runs/<run-id>/generation.json`
-   - Step 3: `/unit-test-reviewer <run-id>` → `.unit-test-agent/runs/<run-id>/review.json`
-   - Step 4: `/unit-test-generator --fix <run-id>` → `.unit-test-agent/runs/<run-id>/generation.r1.json`
-5. **Workflow 2: Regression Failure Analysis & Automated Test Repair:**
-   - Step 1: `/unit-test-failure-analyzer [targets | --log <file>]` → `.unit-test-agent/runs/<run-id>/failure-analysis.json`
-   - Step 2: `/unit-test-generator --repair-failures <run-id>` → `.unit-test-agent/runs/<run-id>/failure-repair.json`
-6. **Customizing `project.json`:**
+4. **One-Time Setup:**
+   - `/codebase-analyzer` → `.unit-test-agent/project.json`. Re-run only when the repository's tooling changes.
+5. **Workflow 1: Generating, Reviewing & Fixing Unit Tests:**
+   - One command: `/unit-test-orchestrator <targets> [--max-review-rounds N]` ([F12](F12-orchestrator.md)).
+   - Equivalent manual steps: `/unit-test-generator <targets>` → `generation.json`; `/unit-test-reviewer <run-id>` → `review.json`; `/unit-test-generator --fix <run-id>` → `generation.r1.json`.
+6. **Workflow 2: Regression Failure Analysis & Automated Test Repair:**
+   - One command: `/unit-test-orchestrator --failures [targets | --log <file>]`.
+   - Equivalent manual steps: `/unit-test-failure-analyzer [targets | --log <file>]` → `failure-analysis.json`; `/unit-test-generator --repair-failures <run-id>` → `failure-repair.json`.
+7. **Customizing `project.json`:**
    - How to answer `missing` questions, customize `policy.coverageThresholds` (including 100% coverage) and `maxRepairAttempts`, and how user edits are preserved across re-runs.
-7. **Handling `suspectedDefects`:**
+8. **Handling `suspectedDefects`:**
    - How the agents report production bugs without corrupting test assertions.
-8. **Contributor Guide & Running Evals (`evals/`):**
+9. **Contributor Guide & Running Evals (`evals/`):**
    - How contributors test changes against `examples/ts-vitest` and `examples/py-pytest` using the `evals/` Vitest suite.
 
 ---
@@ -66,6 +66,7 @@ N/A (Documentation artifact at `README.md`).
 ## 6. Acceptance Criteria Checklist
 
 - [ ] `README.md` covers copy-based installation for all 4 runtimes.
-- [ ] Documents all 4 agents (`codebase-analyzer`, `unit-test-generator`, `unit-test-reviewer`, `unit-test-failure-analyzer`) and all generator modes (`generate`, `--fix`, `--repair-failures`).
+- [ ] Documents all 4 agents (`codebase-analyzer`, `unit-test-generator`, `unit-test-reviewer`, `unit-test-failure-analyzer`), all generator modes (`generate`, `--fix`, `--repair-failures`), and the `unit-test-orchestrator`.
+- [ ] Presents `/codebase-analyzer` as one-time setup, not as a workflow step.
 - [ ] Explains `project.json` customization, `missing` resolution, and `suspectedDefects` handling.
 - [ ] Explains how to run the fixture evaluations in `evals/`.

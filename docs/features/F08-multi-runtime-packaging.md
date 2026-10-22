@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Package the four unit testing agents (`codebase-analyzer`, `unit-test-generator`, `unit-test-reviewer`, `unit-test-failure-analyzer`) so they can be installed into any user repository via plain file copying (`cp -r`) and invoked natively in **Claude Code**, **OpenAI Codex CLI**, **Gemini CLI**, and **GitHub Copilot (VS Code)** without duplicating canonical prompt instructions or using helper scripts.
+Package the four unit testing agents (`codebase-analyzer`, `unit-test-generator`, `unit-test-reviewer`, `unit-test-failure-analyzer`) and the `unit-test-orchestrator` ([F12](F12-orchestrator.md)) so they can be installed into any user repository via plain file copying (`cp -r`) and invoked natively in **Claude Code**, **OpenAI Codex CLI**, **Gemini CLI**, and **GitHub Copilot (VS Code)** without duplicating canonical prompt instructions or using helper scripts.
 
 ---
 
@@ -39,7 +39,8 @@ agents/
 ├── codebase-analyzer.md
 ├── unit-test-generator.md
 ├── unit-test-reviewer.md
-└── unit-test-failure-analyzer.md
+├── unit-test-failure-analyzer.md
+└── unit-test-orchestrator.md
 
 runtimes/
 ├── claude/
@@ -48,7 +49,8 @@ runtimes/
 │       │   ├── codebase-analyzer.md
 │       │   ├── unit-test-generator.md
 │       │   ├── unit-test-reviewer.md
-│       │   └── unit-test-failure-analyzer.md
+│       │   ├── unit-test-failure-analyzer.md
+│       │   └── unit-test-orchestrator.md
 │       └── agents/
 │           └── unit-test-reviewer.md
 ├── codex/
@@ -57,7 +59,8 @@ runtimes/
 │   │       ├── codebase-analyzer/SKILL.md
 │   │       ├── unit-test-generator/SKILL.md
 │   │       ├── unit-test-reviewer/SKILL.md
-│   │       └── unit-test-failure-analyzer/SKILL.md
+│   │       ├── unit-test-failure-analyzer/SKILL.md
+│   │       └── unit-test-orchestrator/SKILL.md
 │   └── .codex/
 │       └── agents/
 │           └── unit-test-reviewer.md
@@ -67,7 +70,8 @@ runtimes/
 │       │   ├── codebase-analyzer.toml
 │       │   ├── unit-test-generator.toml
 │       │   ├── unit-test-reviewer.toml
-│       │   └── unit-test-failure-analyzer.toml
+│       │   ├── unit-test-failure-analyzer.toml
+│       │   └── unit-test-orchestrator.toml
 │       └── agents/
 │           └── unit-test-reviewer.md
 └── copilot/
@@ -76,7 +80,8 @@ runtimes/
         │   ├── codebase-analyzer.prompt.md
         │   ├── unit-test-generator.prompt.md
         │   ├── unit-test-reviewer.prompt.md
-        │   └── unit-test-failure-analyzer.prompt.md
+        │   ├── unit-test-failure-analyzer.prompt.md
+        │   └── unit-test-orchestrator.prompt.md
         └── agents/
             └── unit-test-reviewer.agent.md
 ```
@@ -148,6 +153,7 @@ Use `runSubagent` with `agentName: "unit-test-reviewer"` to execute the instruct
 1. **Canonical Resolution:** Every wrapper points to `.unit-test-agent/agents/<agent-name>.md`.
 2. **Argument Forwarding:** Every wrapper passes the raw user argument string (`<targets>`, `--fix <run-id>`, `--repair-failures <run-id>`, or `--log <file>`) directly to the canonical agent.
 3. **Subagent Context Isolation for Reviewer:** Every runtime wrapper for `unit-test-reviewer` invokes its respective isolated subagent definition so the reviewer never shares conversation history with the generator.
+4. **Orchestrator Wrapper:** Every runtime wrapper for `unit-test-orchestrator` forwards arguments to `.unit-test-agent/agents/unit-test-orchestrator.md` and grants the runtime's subagent tool (Claude Code `Task`, Codex subagents, Gemini `@<agent>`, Copilot `agent/runSubagent`) so the orchestrator can delegate the reviewer to its existing fresh-context subagent. No new subagent definitions are added.
 
 ---
 
@@ -160,8 +166,8 @@ Use `runSubagent` with `agentName: "unit-test-reviewer"` to execute the instruct
 
 ## 6. Acceptance Criteria Checklist
 
-- [ ] All 4 canonical instruction files live in `agents/` with zero duplicated business rules in `runtimes/`.
-- [ ] Thin wrappers exist for all 4 agents across all 4 runtimes (`runtimes/claude/`, `runtimes/codex/`, `runtimes/gemini/`, `runtimes/copilot/`).
+- [ ] All 5 canonical instruction files (4 agents + orchestrator) live in `agents/` with zero duplicated business rules in `runtimes/`.
+- [ ] Thin wrappers exist for all 4 agents and the orchestrator across all 4 runtimes (`runtimes/claude/`, `runtimes/codex/`, `runtimes/gemini/`, `runtimes/copilot/`).
 - [ ] Each runtime includes a fresh-context subagent configuration for `unit-test-reviewer`.
 - [ ] Contains zero `.js`, `.ts`, `.py`, or `.sh` scripts.
 - [ ] Installing into a fixture project requires only `cp -r` commands.

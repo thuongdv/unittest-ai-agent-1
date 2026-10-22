@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-10-20
 - **Context:** [docs/runtime-compatibility.md](../runtime-compatibility.md)
+- **Amended:** 2026-10-22 — `unit-test-orchestrator` ([F12](../features/F12-orchestrator.md), DEC-004) is packaged the same way: one canonical `agents/unit-test-orchestrator.md` plus thin wrappers per runtime.
 
 ## Context and Problem Statement
 

@@ -85,7 +85,7 @@
 <header>
   <span class="status">Status (2026-10-22): specs &amp; plans approved · implementation not started</span>
   <h1>Unit Test AI Agents: what this project delivers</h1>
-  <p class="lede">Four AI coding agents that analyze a repository, write unit tests, review them, and repair failing tests. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions: there are no scripts and no install step beyond copying files.</p>
+  <p class="lede">Four AI coding agents that analyze a repository, write unit tests, review them, and repair failing tests, plus an orchestrator that runs each workflow from a single command. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions: there are no scripts and no install step beyond copying files.</p>
   <nav class="toc" aria-label="Sections">
     <a href="#workflows">Workflows</a>
     <a href="#agents">Agents</a>
@@ -98,47 +98,77 @@
     <a href="#roadmap">Roadmap</a>
   </nav>
   <div class="stats">
-    <div class="stat"><b>4</b><span>agents</span></div>
+    <div class="stat"><b>4 + 1</b><span>agents + orchestrator</span></div>
     <div class="stat"><b>3</b><span>generator modes</span></div>
     <div class="stat"><b>4</b><span>AI runtimes</span></div>
     <div class="stat"><b>6</b><span>language ecosystems</span></div>
     <div class="stat"><b>5</b><span>JSON schemas</span></div>
-    <div class="stat"><b>11</b><span>automated output checks</span></div>
+    <div class="stat"><b>12</b><span>automated output checks</span></div>
   </div>
 </header>
 
 <section id="workflows">
-  <h2>Two workflows, chained by hand</h2>
-  <p>There is no orchestrator. You run each command and pass the <code>run-id</code> printed by the previous step to the next one. Each step writes a JSON file under <code>.unit-test-agent/</code> that the next step reads.</p>
+  <h2>One-time setup, then one command per workflow</h2>
+  <p>You set up a repository once with the analyzer. After that, the orchestrator runs each workflow from a single command. It calls the agents in order, reads each JSON result to choose the next step, and keeps every step under one <code>run-id</code>.</p>
+
+  <h3>Setup: run once per repository</h3>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  A["/codebase-analyzer"] --> P[("project.json")]
+  P -->|read by every workflow| W["Workflows 1 and 2"]
+  T(["Tooling changed?<br/>new framework or test command"]) -.->|re-run by hand| A
+    </pre>
+    <figcaption>The analyzer is not part of any workflow, because a repository rarely changes its test framework. If <code>project.json</code> is missing, the orchestrator stops and asks you to run the analyzer. It never runs the analyzer itself.</figcaption>
+  </figure>
 
   <h3>Workflow 1: generate, review, and fix new tests</h3>
   <figure class="diagram">
     <pre class="mermaid">
 flowchart LR
-  A["/codebase-analyzer"] -->|project.json| B["/unit-test-generator #lt;targets#gt;"]
-  B -->|generation.json| C["/unit-test-reviewer #lt;run-id#gt;"]
-  C -->|review.json| D{verdict}
-  D -->|approved| E(["Done"])
-  D -->|changes_requested| F["/unit-test-generator --fix #lt;run-id#gt;"]
-  F -->|generation.rN.json| C
+  U["/unit-test-orchestrator #lt;targets#gt;"] --> G
+  subgraph O["orchestrator · one run-id"]
+    G["generator"] -->|generation.json| R["reviewer<br/>(fresh subagent)"]
+    R -->|review.json| V{verdict}
+    V -->|changes requested,<br/>rounds left| F["generator --fix"]
+    F -->|generation.rN.json| R
+  end
+  V -->|approved| D(["Done"])
+  V -->|round cap reached| H(["Stop: findings listed<br/>for you to follow up"])
     </pre>
-    <figcaption>The review and fix loop repeats until the reviewer approves. Each fix pass writes a new revision (r1, r2, …).</figcaption>
+    <figcaption>The review and fix loop stops at the first approval, or after <code>--max-review-rounds</code> reviews (default 3). The reviewer always runs in its own fresh subagent.</figcaption>
   </figure>
 
   <h3>Workflow 2: diagnose and repair failing tests</h3>
   <figure class="diagram">
     <pre class="mermaid">
 flowchart LR
-  A["/unit-test-failure-analyzer<br/>targets or --log file"] -->|failure-analysis.json| B["/unit-test-generator<br/>--repair-failures #lt;run-id#gt;"]
-  B -->|failure-repair.json| C(["Suite green:<br/>passing + skipped defects"])
+  U["/unit-test-orchestrator<br/>--failures targets or --log file"] --> A
+  subgraph O["orchestrator · one run-id"]
+    A["failure-analyzer"] -->|failure-analysis.json| Z{failures?}
+    Z -->|yes| R["generator<br/>--repair-failures"]
+  end
+  Z -->|none| OK(["All tests pass"])
+  R -->|failure-repair.json| S(["Summary: tests fixed, defects skipped,<br/>environment steps for you"])
     </pre>
     <figcaption>Use this after a regression, a refactor, or a red CI build. The analyzer can run the tests itself or read an existing CI log.</figcaption>
   </figure>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Workflow</th><th>One command</th><th>The same steps run by hand</th></tr></thead>
+      <tbody>
+        <tr><td>Setup</td><td><code>/codebase-analyzer</code></td><td>(not orchestrated)</td></tr>
+        <tr><td>1. Generate &amp; review</td><td><code>/unit-test-orchestrator &lt;targets&gt;</code></td><td><code>/unit-test-generator &lt;targets&gt;</code> → <code>/unit-test-reviewer &lt;run-id&gt;</code> → <code>/unit-test-generator --fix &lt;run-id&gt;</code></td></tr>
+        <tr><td>2. Diagnose &amp; repair</td><td><code>/unit-test-orchestrator --failures …</code></td><td><code>/unit-test-failure-analyzer …</code> → <code>/unit-test-generator --repair-failures &lt;run-id&gt;</code></td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 <section id="agents">
   <h2>The agents</h2>
-  <p>All four agents need <code>.unit-test-agent/project.json</code>, which the analyzer writes. The three agents after the analyzer stop at once if that file is missing, has an unsupported version, or still has a blocking open question.</p>
+  <p>Every agent and the orchestrator read <code>.unit-test-agent/project.json</code>, which the analyzer writes during setup. They all stop at once if that file is missing, has an unsupported version, or still has a blocking open question. You can still run each agent on its own.</p>
   <div class="grid">
     <article class="card">
       <span class="id">F01</span>
@@ -216,6 +246,19 @@ flowchart LR
         <li>Runs the tests again to confirm the suite passes</li>
       </ul>
       <div class="out">Writes <code>runs/&lt;id&gt;/failure-repair.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F12</span>
+      <h3>Orchestrator</h3>
+      <div class="cmd">/unit-test-orchestrator &lt;targets&gt; | --failures …</div>
+      <ul>
+        <li>Runs a whole workflow from one command</li>
+        <li>Chooses the next step from each agent's JSON result</li>
+        <li>Caps the review and fix loop (<code>--max-review-rounds</code>, default 3)</li>
+        <li>Stops at the first failed step and says which one failed</li>
+        <li>Never runs the analyzer, and has no rules of its own for writing or judging tests</li>
+      </ul>
+      <div class="out">Writes nothing itself; prints a final summary</div>
     </article>
   </div>
 
@@ -336,7 +379,7 @@ flowchart LR
     <pre class="mermaid">
 flowchart LR
   subgraph canon[".unit-test-agent/"]
-    AG["agents/*.md<br/>(4 canonical instruction files)"]
+    AG["agents/*.md<br/>(4 agents + orchestrator)"]
     SC["schemas/*.schema.json<br/>(5 contracts)"]
   end
   CL[".claude/ commands + subagent"] --> AG
@@ -386,7 +429,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <h3>Automated output checks</h3>
       <ul>
         <li>A Vitest package for contributors that inspects the outputs and git state after a run</li>
-        <li>Runs the same 11 checks for every runtime</li>
+        <li>Runs the same 12 checks for every runtime</li>
         <li>Reports the pass rate across repeated runs</li>
       </ul>
     </article>
@@ -394,7 +437,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <span class="id">F08 · F10</span>
       <h3>Packaging &amp; user guide</h3>
       <ul>
-        <li>Thin wrappers for all 4 agents in all 4 runtimes</li>
+        <li>Thin wrappers for all 4 agents and the orchestrator in all 4 runtimes</li>
         <li>A README with installation commands for each runtime, both workflows, and how to customize the agents</li>
       </ul>
     </article>
@@ -414,6 +457,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
         <tr><td>CHK-09</td><td>Repair mode fixes the stale test, skips the bug's test, and the suite passes</td></tr>
         <tr><td>CHK-10</td><td>Running the analyzer again keeps manual edits to <code>project.json</code></td></tr>
         <tr><td>CHK-11</td><td>A blocking question in <code>project.json</code> stops the downstream agents</td></tr>
+        <tr><td>CHK-12</td><td>The orchestrator respects the review-round cap and never runs the analyzer</td></tr>
       </tbody>
     </table>
   </div>
@@ -421,12 +465,13 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
 
 <section id="roadmap">
   <h2>Delivery roadmap</h2>
-  <p>The work is ordered so that each piece can be tested as soon as it is built. The schemas and fixtures come first, then the automated checks, and then the agents that the checks verify.</p>
+  <p>The work is ordered so that each piece can be tested as soon as it is built. The schemas and fixtures come first, then the automated checks, then the agents that the checks verify, and then the orchestrator that runs them.</p>
   <div class="roadmap">
     <div class="phase"><b>Contracts</b><span>F07: 5 JSON schemas</span></div>
     <div class="phase"><b>Fixtures</b><span>F09: TS + Python sample repos</span></div>
-    <div class="phase"><b>Verifier</b><span>F11: 11 automated checks</span></div>
+    <div class="phase"><b>Verifier</b><span>F11: 12 automated checks</span></div>
     <div class="phase"><b>Agents</b><span>F01–F06: 4 agents, 3 generator modes</span></div>
+    <div class="phase"><b>Orchestrator</b><span>F12: one command per workflow</span></div>
     <div class="phase"><b>Runtimes</b><span>F08: wrappers for Claude, Codex, Gemini, Copilot</span></div>
     <div class="phase"><b>End-to-end</b><span>Each agent verified on each runtime</span></div>
     <div class="phase"><b>Guide</b><span>F10: README</span></div>
@@ -435,7 +480,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
 </section>
 
 <footer>
-  Sources: <a href="../features/">docs/features/</a> (F01–F11) · <a href="../decisions/ADR-001-packaging.md">ADR-001</a> · <a href="../runtime-compatibility.md">runtime-compatibility.md</a>.<br>
+  Sources: <a href="../features/">docs/features/</a> (F01–F12) · <a href="../decisions/ADR-001-packaging.md">ADR-001</a> · <a href="../runtime-compatibility.md">runtime-compatibility.md</a>.<br>
   To add a diagram, add a <code>&lt;pre class="mermaid"&gt;</code> block. It renders automatically.
 </footer>
 
