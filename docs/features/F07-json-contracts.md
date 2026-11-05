@@ -206,7 +206,8 @@ Every schema enforces:
    | :--------------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------- |
    | `requirements.schema.json`   | `sources[]`                              | `kind` (`jira` \| `file`), `ref`, `title`, `fieldsRead`, `fetchedAt`, `snapshot`           |
    | `requirements.schema.json`   | `requirements[]`                         | `id` (`^REQ-[0-9]{3,}$`), `sourceRef`, `sourceQuote`, `statement`, `scenarios[]`           |
-   | `requirements.schema.json`   | `requirements[].scenarios[]`             | `id` (`^SCN-[0-9]{3,}$`), `category` (`happy_path` \| `edge` \| `boundary` \| `error`), `given`, `expected` |
+   | `requirements.schema.json`   | `requirements[].scenarios[]`             | `id` (`^SCN-[0-9]{3,}$`), `category` (`happy_path` \| `edge` \| `boundary` \| `error`), `given`, `expected`, `call` and `expectedValue` (string or `null`) |
+   | `requirements.schema.json`   | `codeContract`                           | `status` (`extracted` \| `unavailable` \| `not_requested`), `targets`, `commandExecuted`, `reason`, `symbols[]` (`file`, `name`, `kind`, `signature`) |
    | `requirements.schema.json`   | `unclear[]`                              | `id` (`^UNC-[0-9]{3,}$`), `sourceRef`, `requirementIds`, `question`, `reason`              |
    | `generation.schema.json`     | `requirementsFile`                       | `"requirements.json"` or `null` (required)                                                 |
    | `generation.schema.json`     | `testCases[].scenarioId`                 | `^SCN-[0-9]{3,}$` or `null` (required)                                                     |

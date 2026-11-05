@@ -204,7 +204,7 @@ The requirement says the discount starts at $100; the code starts it above $200.
    - Assign stable IDs (`TC-001`, `TC-002`, ...).
    - **With `--requirements`, map scenarios first:**
      - For each `SCN` in `requirements.json`, write at least one test case on the target symbol that implements it, and set its `scenarioId`.
-     - Translate `given` into concrete inputs and `expected` into an exact assertion. Take the expected value from the scenario text only, never from running or reading the code. Unit or format conversions (e.g., dollars → cents) are allowed and must be stated in `scenario`.
+     - If the scenario has `call` and `expectedValue`, use them verbatim. Otherwise translate `given` into concrete inputs and `expected` into an exact assertion. Take the expected value from the scenario text only, never from running or reading the code. Unit or format conversions (e.g., dollars → cents) are allowed and must be stated in `scenario`.
      - If no symbol in the targets implements a scenario, list it in `unmappedScenarios` with a `reason`.
      - Then add implementation-derived cases (`scenarioId: null`) for the remaining branches. They must never assert a value that contradicts any scenario.
    - **Without `--requirements`:** set every `scenarioId` to `null`, `requirementsFile` to `null`, and `unmappedScenarios` to `[]`.

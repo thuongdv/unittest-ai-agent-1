@@ -54,7 +54,7 @@ The individual agents remain directly invocable; the orchestrator is a convenien
 ### Workflow A: Generate & Review (`<targets>`)
 
 1. Check preconditions (Section 3).
-2. **If `--jira` or `--req-file` is given:** delegate `unit-test-requirement-analyzer` with only those arguments, in its dedicated **isolated subagent** ([F13](F13-requirement-analyzer.md)). Read the `<run-id>` it reports, then delegate `unit-test-generator <targets> --requirements <run-id>`.
+2. **If `--jira` or `--req-file` is given:** delegate `unit-test-requirement-analyzer <targets>` with those arguments, in its dedicated **isolated subagent** ([F13](F13-requirement-analyzer.md)). Read the `<run-id>` it reports, then delegate `unit-test-generator <targets> --requirements <run-id>`.
    **Otherwise:** delegate `unit-test-generator <targets>`. Read the `<run-id>` it reports.
 3. For `round = 1 … N`:
    1. Delegate `unit-test-reviewer <run-id>` in its dedicated **fresh-context reviewer subagent** ([F04](F04-reviewer.md)).
@@ -77,7 +77,7 @@ The individual agents remain directly invocable; the orchestrator is a convenien
 | :----------------------- | :--------------------------------------------------------------------------------------------------------------------------- |
 | Canonical instructions   | Each step follows `.unit-test-agent/agents/<agent>.md` with the forwarded arguments. Never restate or override agent rules.   |
 | Reviewer isolation       | The reviewer always runs in its dedicated subagent, never in a context that ran the generator.                                |
-| Requirement isolation    | The requirement analyzer always runs first, in its dedicated subagent, and receives only `--jira`/`--req-file` (never targets or code). |
+| Requirement isolation    | The requirement analyzer always runs first, in its dedicated subagent, and receives `<targets>` plus `--jira`/`--req-file`. It sees code only through the signature extractor. |
 | Other steps              | Run in a subagent where the runtime supports it; otherwise run inline.                                                       |
 | Step failure             | If a step stops (failed precondition, missing expected output file, unsupported `schemaVersion`), stop the workflow and report which step failed and why. Never skip ahead. |
 | Decisions                | Base every branch only on fields in the JSON outputs (`verdict`, `analyzedFailures`, `resolutionStatus`), never on console text. |

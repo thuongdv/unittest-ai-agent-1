@@ -14,6 +14,7 @@ Every session working on this repository **MUST** begin with these steps:
 ## 2. Hard Project Constraints & Agent Guardrails
 
 - **No helper code in the agents:** Deliverables installed into user repositories are strictly `.md` instruction files, `.json` / `.schema.json` files, and the thinnest runtime wrapper files (`.toml` for Gemini CLI, `.prompt.md` / `.agent.md` for Copilot, `SKILL.md` for Codex, `.md` for Claude Code). Never write `.js`, `.ts`, `.py`, or `.sh` scripts for the agents themselves.
+  - _Exception (DEC-007):_ Read-only **signature extractors** in `tools/` (installed to `.unit-test-agent/tools/`), one per ecosystem (`F13`). An extractor uses only the target repo's runtime and already-installed packages, adds no dependencies, needs no network, writes nothing (prints JSON), and contains no agent logic. Ecosystems without an extractor use strict mode.
   - _Exception:_ Developer evaluation tooling in `evals/` (`F11`) and test fixtures in `examples/` (`F09`) contain TypeScript/Python code used exclusively to test this repository.
 - **Agents use the target repo's tooling:** Agents do their work by running the target repo's own commands (install, typecheck, lint, test, coverage, mutation).
 - **One-time setup:** `/codebase-analyzer` runs once per repository (and again only when its tooling changes). It is never part of a workflow; downstream agents stop if `project.json` is missing.
@@ -27,7 +28,7 @@ Every session working on this repository **MUST** begin with these steps:
   - Never make a failing test pass by deleting or loosening an assertion, or by changing the expected value to whatever buggy output the code returned.
   - When production source code has a bug (`source_regression_bug`), keep the valid assertion, mark the test as skipped/expected-fail using the framework's mechanism, and record it in `suspectedDefects`.
   - Check preconditions (`project.json` / input file existence, supported `schemaVersion`, zero `blocking: true` items in `missing`) before running.
-  - `unit-test-requirement-analyzer` runs in an isolated subagent, never reads `sourceRoots` or `testRoots`, and never writes to Jira (no edits, comments, transitions, or links).
+  - `unit-test-requirement-analyzer` runs in an isolated subagent, never opens `sourceRoots` or `testRoots` (it sees code only as signature-extractor output: no bodies, defaults, comments, or constant values), never takes values from names, and never writes to Jira (no edits, comments, transitions, or links).
   - Every JSON output must include `schemaVersion`, `agent`, `createdAt`, and `runId` (where applicable).
 - **Language-agnostic instructions:** Provide ecosystem reference tables covering at least JS/TS, Python, Java/Kotlin, C#/.NET, Go, and Rust.
 - **Canonical single source of truth:** All agent logic lives in `agents/<agent-name>.md`. Files under `runtimes/<runtime>/` must remain thin wrappers (5–15 lines) with zero duplicated rules.

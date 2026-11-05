@@ -27,11 +27,11 @@ N/A (Documentation artifact at `README.md`).
 ### Required Sections in `README.md`
 
 1. **Overview & Key Principles:**
-   - Pure Markdown agents, zero helper scripts in user repos, language-agnostic (JS/TS, Python, Java/Kotlin, C#/.NET, Go, Rust), strict guardrails (never touches production source files, never weakens assertions to hide bugs).
+   - Markdown agents; the only scripts installed are the read-only signature extractors in `.unit-test-agent/tools/`, language-agnostic (JS/TS, Python, Java/Kotlin, C#/.NET, Go, Rust), strict guardrails (never touches production source files, never weakens assertions to hide bugs).
 2. **Supported Runtimes:**
    - Quick comparison table of Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot (VS Code Agent Mode).
 3. **Installation (Copy-Based, No Install Script):**
-   - Exact `cp -r` commands for copying `agents/` and `schemas/` into `.unit-test-agent/` and copying the chosen runtime wrapper from `runtimes/<runtime>/`.
+   - Exact `cp -r` commands for copying `agents/`, `schemas/`, and `tools/` into `.unit-test-agent/` and copying the chosen runtime wrapper from `runtimes/<runtime>/`.
    - Recommendation on what to commit vs. ignore in `.gitignore` (commit `.unit-test-agent/project.json`, `.unit-test-agent/agents/`, `.unit-test-agent/schemas/`; optionally ignore `.unit-test-agent/runs/`).
 4. **One-Time Setup:**
    - `/codebase-analyzer` → `.unit-test-agent/project.json`. Re-run only when the repository's tooling changes.
@@ -44,7 +44,7 @@ N/A (Documentation artifact at `README.md`).
    - Equivalent manual steps: `/unit-test-failure-analyzer [targets | --log <file>]` → `failure-analysis.json`; `/unit-test-generator --repair-failures <run-id>` → `failure-repair.json`; `/unit-test-reporter <run-id>` → `report.md`.
 7. **Requirements from Jira ([F13](F13-requirement-analyzer.md)):**
    - Per-runtime setup of a Jira MCP server (Claude Code, Codex CLI, Gemini CLI, VS Code Copilot), using the steps verified in [F08](F08-multi-runtime-packaging.md).
-   - Which Jira fields are read, that the agent never writes to Jira, and that it never reads source code.
+   - Which Jira fields are read, that the agent never writes to Jira, and that it sees code only as extracted signatures (no bodies); which ecosystems have an extractor and what strict mode means for the others.
    - `--req-file` for offline use, and how to read `UNC` questions.
 8. **Reading the Run Report ([F14](F14-reporter.md)):**
    - Where `report.md` lives, the recommendation table, the developer and QA sections, and posting it to a pull request from CI.

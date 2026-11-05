@@ -13,9 +13,9 @@ Follows the packaging architecture selected in [ADR-001](../decisions/ADR-001-pa
 ### Copy-Based Installation Commands (in Target Repo)
 
 ```bash
-# 1. Copy canonical agent instructions and JSON schemas (required for all runtimes)
+# 1. Copy canonical agent instructions, JSON schemas, and signature extractors (required for all runtimes)
 mkdir -p <target-repo>/.unit-test-agent
-cp -r agents schemas <target-repo>/.unit-test-agent/
+cp -r agents schemas tools <target-repo>/.unit-test-agent/
 
 # 2. Copy the thin wrapper for your runtime(s):
 # Claude Code:
@@ -35,6 +35,10 @@ cp -r runtimes/copilot/.github <target-repo>/
 ### Repository Layout Delivered by F08
 
 ```text
+tools/                       # read-only signature extractors (F13, DEC-007)
+├── extract-signatures.mjs
+└── extract_signatures.py
+
 agents/
 ├── codebase-analyzer.md
 ├── unit-test-generator.md
@@ -168,7 +172,7 @@ Use `runSubagent` with `agentName: "unit-test-reviewer"` to execute the instruct
 2. **Argument Forwarding:** Every wrapper passes the raw user argument string (`<targets>`, `--fix <run-id>`, `--repair-failures <run-id>`, or `--log <file>`) directly to the canonical agent.
 3. **Subagent Context Isolation for Reviewer and Requirement Analyzer:** Every runtime wrapper for `unit-test-reviewer` and `unit-test-requirement-analyzer` invokes its respective isolated subagent definition, so the reviewer never shares conversation history with the generator and the requirement analyzer never shares context with any step that read source code.
 4. **Orchestrator Wrapper:** Every runtime wrapper for `unit-test-orchestrator` forwards arguments to `.unit-test-agent/agents/unit-test-orchestrator.md` and grants the runtime's subagent tool (Claude Code `Task`, Codex subagents, Gemini `@<agent>`, Copilot `agent/runSubagent`) so the orchestrator can delegate the reviewer and the requirement analyzer to their dedicated subagents. No other subagent definitions are added.
-5. **Jira MCP Access:** Wrappers do not configure MCP servers; the user configures a Jira MCP server in their runtime (README, [F10](F10-readme-user-guide.md)). The requirement-analyzer subagent (and the orchestrator, where tools are listed explicitly, e.g., Copilot `tools:`) must be granted that server's read tools. Where a runtime supports per-subagent tool lists, grant Jira read tools only.
+5. **Jira MCP Access:** Wrappers do not configure MCP servers; the user configures a Jira MCP server in their runtime (README, [F10](F10-readme-user-guide.md)). The requirement-analyzer subagent (and the orchestrator, where tools are listed explicitly, e.g., Copilot `tools:`) must be granted that server's read tools and the shell (to run `.unit-test-agent/tools/` extractors). Where a runtime supports per-subagent tool lists, grant only Jira read tools, the shell, and file read/write.
 
 ---
 
@@ -186,5 +190,5 @@ Use `runSubagent` with `agentName: "unit-test-reviewer"` to execute the instruct
 - [ ] Thin wrappers exist for all 6 agents and the orchestrator across all 4 runtimes (`runtimes/claude/`, `runtimes/codex/`, `runtimes/gemini/`, `runtimes/copilot/`).
 - [ ] Each runtime includes isolated subagent configurations for `unit-test-reviewer` and `unit-test-requirement-analyzer`.
 - [ ] The requirement analyzer can read a Jira issue through the user's Jira MCP server in each runtime.
-- [ ] Contains zero `.js`, `.ts`, `.py`, or `.sh` scripts.
+- [ ] Contains zero `.js`, `.ts`, `.py`, or `.sh` scripts outside `tools/` (the read-only signature extractors).
 - [ ] Installing into a fixture project requires only `cp -r` commands.

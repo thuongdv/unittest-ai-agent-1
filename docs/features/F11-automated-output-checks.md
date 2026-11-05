@@ -155,6 +155,13 @@ EVAL_RUN_DIRS="/tmp/ut-eval-run-1,/tmp/ut-eval-run-2,/tmp/ut-eval-run-3" EVAL_FI
       "passedRuns": 3,
       "totalRuns": 3,
       "passRate": 1.0
+    },
+    {
+      "checkId": "CHK-16",
+      "name": "Signature extractors leak no bodies, defaults, comments, or constant values",
+      "passedRuns": 3,
+      "totalRuns": 3,
+      "passRate": 1.0
     }
   ]
 }
@@ -210,6 +217,11 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
     - Asserts every `DEF-`, `REQ-`, `SCN-`, `UNC-`, and `TC-` ID in the report exists in the run's JSON files, and every defect and unclear ID in the JSON appears in the report.
     - Recomputes the headline recommendation from the F14 recommendation table and asserts the report's headline matches.
     - For a run without requirements: asserts the no-requirements banner is present.
+16. **`CHK-16` Signature Extractor Isolation (`extractors.test.ts`):**
+    - Runs `tools/extract-signatures.mjs` on `examples/ts-vitest/src/discount.ts` and `tools/extract_signatures.py` on `examples/py-pytest/src/inventory/restock.py` directly (no agent run needed).
+    - Asserts the output lists the public signatures and contains no function body, default value, comment/docstring text, or constant/enum value (the thresholds `200` and `0.1` do not appear).
+    - Asserts exit code `2` when `typescript` cannot be resolved.
+    - For agent runs: asserts `requirements.json` `codeContract.symbols` equals the extractor's output for the same targets.
 
 ---
 
@@ -223,6 +235,6 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
 ## 6. Acceptance Criteria Checklist
 
 - [ ] `evals/` is a standalone TypeScript + Vitest package with zero coupling to user-installed agent files.
-- [ ] Implements all 15 property checks (`CHK-01` through `CHK-15`) covering all 6 agents, all 3 generator modes, and the orchestrator.
+- [ ] Implements all 16 property checks (`CHK-01` through `CHK-16`) covering all 6 agents, all 3 generator modes, and the orchestrator.
 - [ ] Includes unit self-tests (using mock run directories) so `npm --prefix evals test:self` verifies the evaluator logic itself.
 - [ ] Supports evaluating multiple run directories and reporting a pass rate across runs.

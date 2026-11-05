@@ -85,7 +85,7 @@
 <header>
   <span class="status">Status (2026-11-05): specs &amp; plans approved · requirement analysis and run report added · implementation not started</span>
   <h1>Unit Test AI Agents: what this project delivers</h1>
-  <p class="lede">Six AI coding agents that analyze a repository, turn Jira requirements into test scenarios, write unit tests, review them against the requirements, repair failing tests, and write a report for developers and QA, plus an orchestrator that runs each workflow from a single command. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions: there are no scripts and no install step beyond copying files.</p>
+  <p class="lede">Six AI coding agents that analyze a repository, turn Jira requirements into test scenarios, write unit tests, review them against the requirements, repair failing tests, and write a report for developers and QA, plus an orchestrator that runs each workflow from a single command. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions. The only scripts are two small read-only signature extractors, and there is no install step beyond copying files.</p>
   <nav class="toc" aria-label="Sections">
     <a href="#workflows">Workflows</a>
     <a href="#requirements">Requirements &amp; report</a>
@@ -104,7 +104,7 @@
     <div class="stat"><b>4</b><span>AI runtimes</span></div>
     <div class="stat"><b>6</b><span>language ecosystems</span></div>
     <div class="stat"><b>6</b><span>JSON schemas</span></div>
-    <div class="stat"><b>15</b><span>automated output checks</span></div>
+    <div class="stat"><b>16</b><span>automated output checks</span></div>
   </div>
 </header>
 
@@ -138,7 +138,7 @@ flowchart LR
   end
   P -->|report.md| D(["Recommendation for<br/>developers, QA, BA"])
     </pre>
-    <figcaption>With <code>--jira</code> (or <code>--req-file</code>), the requirement analyzer runs first and never sees the code. The review and fix loop stops at the first approval, or after <code>--max-review-rounds</code> reviews (default 3). Every run ends with <code>report.md</code>.</figcaption>
+    <figcaption>With <code>--jira</code> (or <code>--req-file</code>), the requirement analyzer runs first and sees only function signatures, never their bodies. The review and fix loop stops at the first approval, or after <code>--max-review-rounds</code> reviews (default 3). Every run ends with <code>report.md</code>.</figcaption>
   </figure>
 
   <h3>Workflow 2: diagnose and repair failing tests</h3>
@@ -175,9 +175,10 @@ flowchart LR
   <figure class="diagram">
     <pre class="mermaid">
 flowchart LR
-  J[("Jira issue<br/>via MCP")] --> A["requirement analyzer<br/>never sees code"]
+  J[("Jira issue<br/>via MCP")] --> A["requirement analyzer<br/>signatures only, no bodies"]
   A -->|"REQ · SCN · UNC"| G["generator<br/>expected values from SCN"]
   C[("source code")] --> G
+  C -->|"signature extractor"| A
   G -->|tests + defects| R["reviewer<br/>sees all three"]
   J -.-> R
   C -.-> R
@@ -303,7 +304,7 @@ flowchart LR
       <div class="cmd">/unit-test-requirement-analyzer --jira KEY</div>
       <ul>
         <li>Reads Jira issues through the Jira MCP server (or exported files with <code>--req-file</code>)</li>
-        <li>Runs in an isolated subagent and never reads source or test code</li>
+        <li>Runs in an isolated subagent and sees only function signatures (from a read-only extractor), never bodies, defaults, or comments</li>
         <li>Extracts business rules and boundary scenarios with expected results</li>
         <li>Turns ambiguities into questions instead of guessing</li>
         <li>Never writes to Jira</li>
@@ -349,7 +350,7 @@ flowchart TD
     <li><b>Production code is never modified.</b> Agents write only under the configured test folders and <code>.unit-test-agent/</code>.</li>
     <li><b>Failing tests are never "fixed" by weakening them.</b> An agent never deletes or loosens an assertion, and never changes an expected value to match buggy output.</li>
     <li><b>Bugs found in your code are reported.</b> The agent keeps the correct assertion, marks the test as skipped or expected-to-fail using the framework's own mechanism, and records the bug in <code>suspectedDefects</code> with the expected and actual behavior.</li>
-    <li><b>Expected results come from the requirement, not the code.</b> When requirements are given, tests assert what the ticket says; the requirement analyzer never reads code and never writes to Jira.</li>
+    <li><b>Expected results come from the requirement, not the code.</b> When requirements are given, tests assert what the ticket says; the requirement analyzer sees only signatures, never function bodies, and never writes to Jira.</li>
     <li><b>Agents check before they act.</b> If configuration is missing, a schema version is unsupported, or a blocking question is unanswered, the agent stops and tells you what to do.</li>
     <li><b>Every output can be traced.</b> Each JSON file records its schema version, the agent that wrote it, a timestamp, and a run ID.</li>
   </ul>
@@ -438,7 +439,7 @@ flowchart LR
 </section>
 
 <section id="install">
-  <h2>Installation: copy two folders</h2>
+  <h2>Installation: copy three folders</h2>
   <p>Each agent's instructions are stored in one place. Each runtime gets a 5–15 line wrapper that points to those instructions, so changing a rule means editing one file.</p>
   <figure class="diagram">
     <pre class="mermaid">
@@ -446,6 +447,7 @@ flowchart LR
   subgraph canon[".unit-test-agent/"]
     AG["agents/*.md<br/>(6 agents + orchestrator)"]
     SC["schemas/*.schema.json<br/>(6 contracts)"]
+    TL["tools/<br/>(signature extractors)"]
   end
   CL[".claude/ commands + subagent"] --> AG
   CX[".agents/skills + .codex/agents"] --> AG
@@ -455,12 +457,13 @@ flowchart LR
     <figcaption>A team can commit wrappers for several runtimes side by side. They all point to the same instruction files.</figcaption>
   </figure>
 <pre class="tree">mkdir -p &lt;repo&gt;/.unit-test-agent
-cp -r agents schemas &lt;repo&gt;/.unit-test-agent/
+cp -r agents schemas tools &lt;repo&gt;/.unit-test-agent/
 cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copilot
 
 &lt;repo&gt;/.unit-test-agent/
 ├── agents/            # instructions (commit)
 ├── schemas/           # JSON contracts (commit)
+├── tools/             # read-only signature extractors (commit)
 ├── project.json       # written by the analyzer; edit freely (commit)
 └── runs/&lt;run-id&gt;/     # per-run reports (optionally gitignored)
     ├── requirements.json · generation.json · generation.r1.json · review.json
@@ -496,7 +499,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <h3>Automated output checks</h3>
       <ul>
         <li>A Vitest package for contributors that inspects the outputs and git state after a run</li>
-        <li>Runs the same 15 checks for every runtime</li>
+        <li>Runs the same 16 checks for every runtime</li>
         <li>Reports the pass rate across repeated runs</li>
       </ul>
     </article>
@@ -528,6 +531,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
         <tr><td>CHK-13</td><td>Every requirement scenario has a test or is listed as not implemented in the targets</td></tr>
         <tr><td>CHK-14</td><td>A requirement violation is caught, its test asserts the requirement's value, and the reviewer rates it a bug</td></tr>
         <tr><td>CHK-15</td><td><code>report.md</code> has every section, and its IDs, counts, and recommendation match the JSON</td></tr>
+        <tr><td>CHK-16</td><td>The signature extractors output no function bodies, default values, comments, or constant values</td></tr>
       </tbody>
     </table>
   </div>
@@ -539,7 +543,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
   <div class="roadmap">
     <div class="phase"><b>Contracts</b><span>F07: 6 JSON schemas</span></div>
     <div class="phase"><b>Fixtures</b><span>F09: TS + Python sample repos</span></div>
-    <div class="phase"><b>Verifier</b><span>F11: 15 automated checks</span></div>
+    <div class="phase"><b>Verifier</b><span>F11: 16 automated checks</span></div>
     <div class="phase"><b>Agents</b><span>F01–F06, F13, F14: 6 agents, 3 generator modes</span></div>
     <div class="phase"><b>Orchestrator</b><span>F12: one command per workflow</span></div>
     <div class="phase"><b>Runtimes</b><span>F08: wrappers for Claude, Codex, Gemini, Copilot</span></div>

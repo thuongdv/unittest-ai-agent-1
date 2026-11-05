@@ -79,7 +79,7 @@ examples/py-pytest/
    TMP_DIR=$(mktemp -d)
    cp -r examples/ts-vitest/. "$TMP_DIR/"
    mkdir -p "$TMP_DIR/.unit-test-agent"
-   cp -r agents schemas "$TMP_DIR/.unit-test-agent/"
+   cp -r agents schemas tools "$TMP_DIR/.unit-test-agent/"
    cp -r runtimes/claude/.claude "$TMP_DIR/"
    cd "$TMP_DIR" && git init && npm install && git add . && git commit -m "chore: baseline"
    ```
@@ -101,7 +101,7 @@ examples/py-pytest/
    - Verify `failure-repair.json` shows the stale test fixed, the regression test marked skipped with `suspectedDefects` populated, and re-running the test file exits with code 0.
 6. **Step E — Test `unit-test-requirement-analyzer` (F13) & `unit-test-reporter` (F14):**
    - Contrast first: run `/unit-test-generator src/discount.ts` (no requirements) and verify its tests pass and `suspectedDefects` is empty. This is the oracle problem: code-derived tests confirm the wrong threshold.
-   - Reset to baseline. Run `/unit-test-requirement-analyzer --req-file requirements/SHOP-142.md` and verify `requirements.json` has boundary scenarios at $99.99 and $100 and an `UNC` item for rounding. Verify no file under `src/` or `tests/` was read.
+   - Reset to baseline. Run `/unit-test-requirement-analyzer src/discount.ts --req-file requirements/SHOP-142.md` and verify `requirements.json` has `codeContract.symbols` with `calculateDiscount(amount: number): number` (no `200` anywhere in `codeContract`), boundary scenarios `calculateDiscount(99.99)` → `0` and `calculateDiscount(100)` → `10`, and an `UNC` item for rounding. Verify no file under `src/` or `tests/` was opened (only the extractor command ran).
    - Run `/unit-test-generator src/discount.ts --requirements <run-id>` and verify the $100 and $200 scenario tests are skipped as defects with `scenarioId` set.
    - Run `/unit-test-reviewer <run-id>` and verify `requirementCompliance` classifies the threshold requirement as `bug`.
    - Run `/unit-test-reporter <run-id>` and verify `report.md` recommends fixing production code and lists the `UNC` item under questions for BA/PO.
