@@ -72,6 +72,7 @@ Consume a failure analysis report (`.unit-test-agent/runs/<run-id>/failure-analy
       "targetFile": "src/pricing.ts",
       "targetSymbol": "calculateMemberPrice",
       "line": 31,
+      "scenarioId": null,
       "testFile": "tests/pricing.test.ts",
       "description": "calculateMemberPrice adds 10% instead of subtracting 10% for gold tier members.",
       "expectedBehavior": "calculateMemberPrice(100, 'gold') should return 90",

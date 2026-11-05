@@ -19,6 +19,8 @@
 - `evals/tests/generator-and-review.eval.test.ts` (`CHK-03`, `CHK-04`, `CHK-05`, `CHK-06`, `CHK-07`)
 - `evals/tests/failure-workflow.eval.test.ts` (`CHK-08`, `CHK-09`)
 - `evals/tests/orchestrator.eval.test.ts` (`CHK-12`)
+- `evals/tests/requirements.eval.test.ts` (`CHK-13`, `CHK-14`)
+- `evals/tests/report.eval.test.ts` (`CHK-15`)
 - `evals/tests/self-check.test.ts` (unit tests with synthetic valid/invalid run fixtures verifying the eval suite itself)
 
 ## 3. Ordered Tasks
@@ -30,15 +32,15 @@
   - [ ] `CHK-01` through `CHK-05` pass against synthetic valid runs and fail against synthetic invalid runs.
 - **Files Touched:** `evals/package.json`, `evals/tsconfig.json`, `evals/vitest.config.ts`, `evals/src/loader.ts`, `evals/tests/schema.eval.test.ts`, `evals/tests/analyzer.eval.test.ts`, `evals/tests/generator-and-review.eval.test.ts`
 
-### Task F11-T2: Implement Reviewer, Fix, Failure-Analysis, Repair & Precondition Checks (`CHK-06` to `CHK-12`) + Pass-Rate Reporter
+### Task F11-T2: Implement Reviewer, Fix, Failure-Analysis, Repair, Precondition, Requirement & Report Checks (`CHK-06` to `CHK-15`) + Pass-Rate Reporter
 
-- **Description:** Implement `CHK-06` (`review.json` caseId integrity), `CHK-07` (fix mode scope & assertion count preservation), `CHK-08` (`failure-analysis.json` `stale_test` vs `source_regression_bug`), `CHK-09` (`failure-repair.json` verification), `CHK-10` (user edit preservation on analyzer re-run), `CHK-11` (blocking `missing` item stops downstream agents), `CHK-12` (orchestrator review-round cap and analyzer boundary), `passrate.ts` multi-run reporter, and `self-check.test.ts`.
+- **Description:** Implement `CHK-06` (`review.json` caseId integrity), `CHK-07` (fix mode scope & assertion count preservation), `CHK-08` (`failure-analysis.json` `stale_test` vs `source_regression_bug`), `CHK-09` (`failure-repair.json` verification), `CHK-10` (user edit preservation on analyzer re-run), `CHK-11` (blocking `missing` item stops downstream agents), `CHK-12` (orchestrator review-round cap, analyzer boundary, shared run-id with requirements, `report.md` present), `CHK-13` (requirement scenario traceability), `CHK-14` (requirement violation classified as `bug`), `CHK-15` (`report.md` consistency with the JSON), `passrate.ts` multi-run reporter, and `self-check.test.ts`.
 - **Acceptance Criteria:**
-  - [ ] `npm --prefix evals run test:self` passes all 12 checks (`CHK-01`–`CHK-12`).
+  - [ ] `npm --prefix evals run test:self` passes all 15 checks (`CHK-01`–`CHK-15`).
   - [ ] Multi-run pass-rate reporter outputs per-check and overall pass rates across multiple run directories.
-- **Files Touched:** `evals/src/passrate.ts`, `evals/tests/generator-and-review.eval.test.ts`, `evals/tests/failure-workflow.eval.test.ts`, `evals/tests/orchestrator.eval.test.ts`, `evals/tests/self-check.test.ts`
+- **Files Touched:** `evals/src/passrate.ts`, `evals/tests/generator-and-review.eval.test.ts`, `evals/tests/failure-workflow.eval.test.ts`, `evals/tests/orchestrator.eval.test.ts`, `evals/tests/requirements.eval.test.ts`, `evals/tests/report.eval.test.ts`, `evals/tests/self-check.test.ts`
 
 ## 4. How to Verify Manually
 
-1. Run `npm --prefix evals install && npm --prefix evals run test:self` to verify all 12 checks against synthetic mock run directories.
+1. Run `npm --prefix evals install && npm --prefix evals run test:self` to verify all 15 checks against synthetic mock run directories.
 2. Run an agent workflow in a temp fixture copy and execute `EVAL_TARGET_DIR=/tmp/<run> EVAL_FIXTURE=ts-vitest npm --prefix evals test`.

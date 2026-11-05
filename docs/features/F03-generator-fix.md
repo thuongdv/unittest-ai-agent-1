@@ -44,6 +44,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
   "reviewFile": "review.json",
   "createdAt": "2026-10-20T09:30:00Z",
   "targets": ["src/pricing.ts"],
+  "requirementsFile": null,
   "testFilesWritten": ["tests/pricing.test.ts"],
   "addressedFindings": [
     {
@@ -65,6 +66,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "targetFile": "src/pricing.ts",
       "targetSymbol": "calculateTotal",
       "category": "happy_path",
+      "scenarioId": null,
       "scenario": "Valid items array with standard tax rate returns exact expected total 108.50",
       "status": "passed"
     },
@@ -75,6 +77,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "targetFile": "src/pricing.ts",
       "targetSymbol": "calculateTotal",
       "category": "edge",
+      "scenarioId": null,
       "scenario": "Empty items array returns 0 without applying flat shipping fee",
       "status": "passed"
     },
@@ -85,6 +88,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "targetFile": "src/pricing.ts",
       "targetSymbol": "applyDiscount",
       "category": "boundary",
+      "scenarioId": null,
       "scenario": "Discount percentage of exactly 100 reduces total to 0, not negative",
       "status": "skipped_defect"
     },
@@ -95,6 +99,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "targetFile": "src/pricing.ts",
       "targetSymbol": "calculateTotal",
       "category": "error",
+      "scenarioId": null,
       "scenario": "Negative item quantity triggers validation error",
       "status": "passed"
     },
@@ -105,6 +110,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "targetFile": "src/pricing.ts",
       "targetSymbol": "calculateTotal",
       "category": "boundary",
+      "scenarioId": null,
       "scenario": "Boundary quantity === 100 triggers bulk tier discount",
       "status": "passed"
     }
@@ -128,6 +134,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "reason": "Defensive unreachable default branch in exhaustive switch over Currency enum"
     }
   ],
+  "unmappedScenarios": [],
   "suspectedDefects": [
     {
       "defectId": "DEF-001",
@@ -135,6 +142,7 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
       "targetSymbol": "applyDiscount",
       "line": 42,
       "testCaseId": "TC-003",
+      "scenarioId": null,
       "testFile": "tests/pricing.test.ts",
       "description": "applyDiscount subtracts (price * (1 + discount/100)) instead of (price * (discount/100)) when discount === 100, returning -price instead of 0.",
       "expectedBehavior": "applyDiscount(100, 100) should return 0",
@@ -160,6 +168,9 @@ Address reviewer findings from `.unit-test-agent/runs/<run-id>/review.json` by u
      - Modify **only** the specific test cases or files flagged by the reviewer.
      - Do **not** touch unflagged test files or unflagged passing test cases.
      - Do **not** remove assertions to resolve a finding (replace weak assertions with stronger assertions, remove duplicate tests only when explicitly flagged as `duplicate_case`, isolate non-deterministic dependencies for `flakyTests`, and add boundary/branch assertions to kill `survivingMutants`).
+     - `missing_requirement_scenario`: add a test case for the finding's `scenarioId`, following the F02 scenario-mapping rules.
+     - `expected_value_mirrors_implementation`: change the expected value to the linked scenario's (or documented contract's) value. If the test then fails against the code, keep it and mark it `skipped_defect` with a `suspectedDefects` entry.
+   - Copy `requirementsFile` and every existing `scenarioId` and `unmappedScenarios` entry forward unchanged unless a finding addresses it.
 4. **Re-run Tests & Coverage:**
    - Run the test suite and repair any syntax/setup errors up to `maxRepairAttempts`.
    - Run target-scoped coverage and update `coverage` and `uncoveredLines`.

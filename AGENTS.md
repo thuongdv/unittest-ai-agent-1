@@ -18,13 +18,16 @@ Every session working on this repository **MUST** begin with these steps:
 - **Agents use the target repo's tooling:** Agents do their work by running the target repo's own commands (install, typecheck, lint, test, coverage, mutation).
 - **One-time setup:** `/codebase-analyzer` runs once per repository (and again only when its tooling changes). It is never part of a workflow; downstream agents stop if `project.json` is missing.
 - **Orchestrator sequences only (`F12`):** `/unit-test-orchestrator` runs a whole workflow from one command. It delegates to the canonical agents, branches only on their JSON outputs, writes no files of its own, never runs `/codebase-analyzer`, and holds zero test-writing/review/analysis rules. Each agent stays directly invocable:
-  - Generation & review flow: `/unit-test-orchestrator <targets>` = `/unit-test-generator <targets>` → (`/unit-test-reviewer <run>` → `/unit-test-generator --fix <run>`) repeated until approved or `--max-review-rounds` (default 3)
-  - Regression / failure repair flow: `/unit-test-orchestrator --failures [targets | --log <file>]` = `/unit-test-failure-analyzer [targets | --log <file>]` → `/unit-test-generator --repair-failures <run>`
+  - Generation & review flow: `/unit-test-orchestrator <targets> [--jira <keys> | --req-file <files>]` = [`/unit-test-requirement-analyzer --jira <keys>` →] `/unit-test-generator <targets> [--requirements <run>]` → (`/unit-test-reviewer <run>` → `/unit-test-generator --fix <run>`) repeated until approved or `--max-review-rounds` (default 3) → `/unit-test-reporter <run>`
+  - Regression / failure repair flow: `/unit-test-orchestrator --failures [targets | --log <file>]` = `/unit-test-failure-analyzer [targets | --log <file>]` → `/unit-test-generator --repair-failures <run>` → `/unit-test-reporter <run>`
+- **Requirements are the test oracle (`F13`):** Requirements (Jira via MCP, or `--req-file`) are optional. When present, expected values come from requirement scenarios, never from the code's output. When absent, the implementation (with its docs and types) is the requirement, and reports must say so.
+- **Reports render, never judge (`F14`):** `unit-test-reporter` writes only `runs/<run>/report.md`, and every status, ID, and count in it comes from the run's JSON files.
 - **Core agent guardrails (must be enforced in `agents/*.md`):**
   - Write only under configured `testRoots` (and `.unit-test-agent/`). Never modify production source files.
   - Never make a failing test pass by deleting or loosening an assertion, or by changing the expected value to whatever buggy output the code returned.
   - When production source code has a bug (`source_regression_bug`), keep the valid assertion, mark the test as skipped/expected-fail using the framework's mechanism, and record it in `suspectedDefects`.
   - Check preconditions (`project.json` / input file existence, supported `schemaVersion`, zero `blocking: true` items in `missing`) before running.
+  - `unit-test-requirement-analyzer` runs in an isolated subagent, never reads `sourceRoots` or `testRoots`, and never writes to Jira (no edits, comments, transitions, or links).
   - Every JSON output must include `schemaVersion`, `agent`, `createdAt`, and `runId` (where applicable).
 - **Language-agnostic instructions:** Provide ecosystem reference tables covering at least JS/TS, Python, Java/Kotlin, C#/.NET, Go, and Rust.
 - **Canonical single source of truth:** All agent logic lives in `agents/<agent-name>.md`. Files under `runtimes/<runtime>/` must remain thin wrappers (5–15 lines) with zero duplicated rules.

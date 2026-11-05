@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-Define strict, human-reviewable JSON Schema (Draft 2020-12) files in `schemas/` for every JSON artifact written by the four agents under `.unit-test-agent/`. These schemas serve both as the explicit contract included in agent instructions and as the validation rules executed by `evals/` ([F11](F11-automated-output-checks.md)).
+Define strict, human-reviewable JSON Schema (Draft 2020-12) files in `schemas/` for every JSON artifact written by the agents under `.unit-test-agent/`. These schemas serve both as the explicit contract included in agent instructions and as the validation rules executed by `evals/` ([F11](F11-automated-output-checks.md)).
 
 ---
 
@@ -24,15 +24,18 @@ Not invoked directly by users as a command. Schemas are:
 3. `schemas/review.schema.json` — Validates `.unit-test-agent/runs/<run-id>/review.json` ([F04](F04-reviewer.md))
 4. `schemas/failure-analysis.schema.json` — Validates `.unit-test-agent/runs/<run-id>/failure-analysis.json` ([F05](F05-failure-analyzer.md))
 5. `schemas/failure-repair.schema.json` — Validates `.unit-test-agent/runs/<run-id>/failure-repair.json` ([F06](F06-generator-repair-failures.md))
+6. `schemas/requirements.schema.json` — Validates `.unit-test-agent/runs/<run-id>/requirements.json` ([F13](F13-requirement-analyzer.md))
+
+`report.md` ([F14](F14-reporter.md)) is Markdown, not JSON, and has no schema; `evals/` checks it with `CHK-15`.
 
 ### Common Envelope Fields (Required Across All Outputs)
 
 Every schema enforces:
 
 - `schemaVersion`: `"1.0.0"` (semver pattern `^1\.[0-9]+\.[0-9]+$`)
-- `agent`: `"codebase-analyzer"` | `"unit-test-generator"` | `"unit-test-reviewer"` | `"unit-test-failure-analyzer"`
+- `agent`: `"codebase-analyzer"` | `"unit-test-generator"` | `"unit-test-reviewer"` | `"unit-test-failure-analyzer"` | `"unit-test-requirement-analyzer"`
 - `createdAt`: ISO 8601 date-time string
-- `runId`: Non-empty string (required on all run-scoped files: `generation`, `review`, `failure-analysis`, `failure-repair`)
+- `runId`: Non-empty string (required on all run-scoped files: `generation`, `review`, `failure-analysis`, `failure-repair`, `requirements`)
 
 ### Complete JSON Schema Example (`schemas/failure-analysis.schema.json`)
 
@@ -192,24 +195,39 @@ Every schema enforces:
 
 1. **Reusable `$defs` per Schema:**
    - In `project.schema.json`: Define `$defs/detectedString`, `$defs/detectedStringArray`, and `$defs/missingItem` so every detected field consistently enforces `{ "value": ..., "confidence": "high"|"medium"|"low", "evidence": "..." }`.
-   - In `generation.schema.json` and `failure-repair.schema.json`: Share a consistent `$defs/suspectedDefect` structure (`defectId`, `targetFile`, `targetSymbol`, `line`, `testFile`, `description`, `expectedBehavior`, `actualBehavior`).
+   - In `generation.schema.json` and `failure-repair.schema.json`: Share a consistent `$defs/suspectedDefect` structure (`defectId`, `targetFile`, `targetSymbol`, `line`, `scenarioId` (string or `null`), `testFile`, `description`, `expectedBehavior`, `actualBehavior`).
 2. **Strict Validation (`additionalProperties: false`):**
    - Set `"additionalProperties": false` on all objects so typos in field names made by an agent are immediately caught by schema validation.
 3. **Mode Discrimination in `generation.schema.json`:**
    - Support both `mode: "generate"` (`generation.json`) and `mode: "fix"` (`generation.r<N>.json`, which additionally requires `revision`, `parentGenerationFile`, `reviewFile`, and `addressedFindings`).
+4. **Requirement Traceability Fields:**
+
+   | Schema                       | Field                                    | Type                                                                                       |
+   | :--------------------------- | :--------------------------------------- | :----------------------------------------------------------------------------------------- |
+   | `requirements.schema.json`   | `sources[]`                              | `kind` (`jira` \| `file`), `ref`, `title`, `fieldsRead`, `fetchedAt`, `snapshot`           |
+   | `requirements.schema.json`   | `requirements[]`                         | `id` (`^REQ-[0-9]{3,}$`), `sourceRef`, `sourceQuote`, `statement`, `scenarios[]`           |
+   | `requirements.schema.json`   | `requirements[].scenarios[]`             | `id` (`^SCN-[0-9]{3,}$`), `category` (`happy_path` \| `edge` \| `boundary` \| `error`), `given`, `expected` |
+   | `requirements.schema.json`   | `unclear[]`                              | `id` (`^UNC-[0-9]{3,}$`), `sourceRef`, `requirementIds`, `question`, `reason`              |
+   | `generation.schema.json`     | `requirementsFile`                       | `"requirements.json"` or `null` (required)                                                 |
+   | `generation.schema.json`     | `testCases[].scenarioId`                 | `^SCN-[0-9]{3,}$` or `null` (required)                                                     |
+   | `generation.schema.json`     | `unmappedScenarios[]`                    | `scenarioId`, `reason` (required; may be empty)                                            |
+   | `review.schema.json`         | `rubricFindings[].caseId` / `.scenarioId` | string or `null` (both required)                                                          |
+   | `review.schema.json`         | `rubricFindings[].rubricCategory`        | adds `missing_requirement_scenario`, `expected_value_mirrors_implementation`               |
+   | `review.schema.json`         | `requirementCompliance`                  | `status` (`assessed` \| `not_assessed`), `requirementsFile`, `results[]` with `requirementId`, `classification` (`pass` \| `bug` \| `test_issue` \| `unclear` \| `not_covered`), `scenarioIds`, `testCaseIds`, `defectIds`, `unclearIds`, `note` |
 
 ---
 
 ## 5. Edge Cases
 
 - **Nullable fields in `project.json`:** Undetected optional or missing fields must allow `"value": null` in `project.schema.json` while still requiring `confidence` and `evidence`.
+- **Requirement compliance not assessed:** When `requirementCompliance.status` is `"not_assessed"`, `requirementsFile` must be `null` and `results` must be empty.
 - **Skipped mutation testing in `review.json`:** When `mutationTesting.status` is `"skipped_not_configured"`, `mutationScore`, `killed`, `survived`, and `timeout` must allow `null`.
 
 ---
 
 ## 6. Acceptance Criteria Checklist
 
-- [ ] All 5 JSON Schema files exist in `schemas/` (`project`, `generation`, `review`, `failure-analysis`, `failure-repair`).
+- [ ] All 6 JSON Schema files exist in `schemas/` (`project`, `generation`, `review`, `failure-analysis`, `failure-repair`, `requirements`).
 - [ ] Every schema uses JSON Schema Draft 2020-12 and sets `"additionalProperties": false`.
-- [ ] All JSON examples in `docs/features/F01` through `F06` validate cleanly against their corresponding schema in `schemas/`.
+- [ ] All complete JSON examples in `docs/features/F01` through `F06` and `F13` validate cleanly against their corresponding schema in `schemas/` (sections labelled "Excerpt" are partial and exempt).
 - [ ] Every schema requires `schemaVersion`, `agent`, `createdAt`, and (for run files) `runId`.

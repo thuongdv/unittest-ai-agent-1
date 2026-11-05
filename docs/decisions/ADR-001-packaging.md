@@ -4,6 +4,7 @@
 - **Date:** 2026-10-20
 - **Context:** [docs/runtime-compatibility.md](../runtime-compatibility.md)
 - **Amended:** 2026-10-22 — `unit-test-orchestrator` ([F12](../features/F12-orchestrator.md), DEC-004) is packaged the same way: one canonical `agents/unit-test-orchestrator.md` plus thin wrappers per runtime.
+- **Amended:** 2026-11-05 — `unit-test-requirement-analyzer` ([F13](../features/F13-requirement-analyzer.md), DEC-005) and `unit-test-reporter` ([F14](../features/F14-reporter.md), DEC-006) are packaged the same way. The requirement analyzer also gets a dedicated isolated subagent per runtime, like the reviewer. Jira access uses the MCP server the user configures in their runtime; wrappers add no MCP configuration.
 
 ## Context and Problem Statement
 

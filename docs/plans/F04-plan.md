@@ -5,6 +5,7 @@
 - **Depends on:**
   - [F07: JSON Contracts (`schemas/review.schema.json`)](../features/F07-json-contracts.md)
   - [F02: Generator — Generate Mode](../features/F02-generator-generate.md)
+  - [F13: Requirement Analyzer](../features/F13-requirement-analyzer.md)
 
 ## 2. Files to Create or Change
 
@@ -14,9 +15,10 @@
 
 ### Task F04-T1: Draft `agents/unit-test-reviewer.md` Rubric, Mutation & Flakiness Instructions
 
-- **Description:** Write `agents/unit-test-reviewer.md` with precondition checks, fresh-context subagent rules, the 7-point review rubric, ecosystem-specific scoped mutation testing table (Stryker, `mutmut`, PIT, Stryker.NET, `gremlins`, `cargo-mutants`) with graceful skip when unconfigured, 3x flakiness reruns, and `review.json` output rules.
+- **Description:** Write `agents/unit-test-reviewer.md` with precondition checks, fresh-context subagent rules, the 9-point review rubric, the requirement-compliance classification table (`bug`, `test_issue`, `unclear`, `not_covered`, `pass`; `not_assessed` without requirements), ecosystem-specific scoped mutation testing table (Stryker, `mutmut`, PIT, Stryker.NET, `gremlins`, `cargo-mutants`) with graceful skip when unconfigured, 3x flakiness reruns, and `review.json` output rules.
 - **Acceptance Criteria:**
-  - [ ] Requires every `finding.caseId` to match an existing `id` in `generation.json`.
+  - [ ] Requires every non-null `finding.caseId` to match an existing `id` in `generation.json`, and every non-null `scenarioId` to exist in `requirements.json`.
+  - [ ] States that `bug`, `unclear`, and `not_covered` never block approval.
   - [ ] Explicitly instructs the agent not to fail when `mutationTool.value` is `null` (`status: "skipped_not_configured"`).
   - [ ] Enforces 3 consecutive test executions for flakiness detection.
   - [ ] Strictly forbids editing source or test files.
@@ -28,6 +30,7 @@
 - **Acceptance Criteria:**
   - [ ] `.unit-test-agent/runs/<run-id>/review.json` validates against `schemas/review.schema.json`.
   - [ ] `git status` shows zero modified source or test files after review.
+  - [ ] On the `discount.ts` / `restock.py` requirement runs, the threshold requirement is classified `bug`.
 - **Files Touched:** `PROGRESS.md`
 
 ## 4. How to Verify Manually

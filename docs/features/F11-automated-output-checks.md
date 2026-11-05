@@ -35,7 +35,7 @@ EVAL_RUN_DIRS="/tmp/ut-eval-run-1,/tmp/ut-eval-run-2,/tmp/ut-eval-run-3" EVAL_FI
 
 - `EVAL_TARGET_DIR` (or `EVAL_RUN_DIRS` for multi-run pass-rate calculation): Path to the temporary fixture directory where the agent chain ran.
 - `EVAL_FIXTURE`: `"ts-vitest"` | `"py-pytest"` (selects the expected fixture baseline assertions).
-- `schemas/*.schema.json`: The 5 JSON Schema files from [F07](F07-json-contracts.md).
+- `schemas/*.schema.json`: The 6 JSON Schema files from [F07](F07-json-contracts.md).
 
 ### Outputs
 
@@ -134,6 +134,27 @@ EVAL_RUN_DIRS="/tmp/ut-eval-run-1,/tmp/ut-eval-run-2,/tmp/ut-eval-run-3" EVAL_FI
       "passedRuns": 3,
       "totalRuns": 3,
       "passRate": 1.0
+    },
+    {
+      "checkId": "CHK-13",
+      "name": "Every requirement scenario is tested or listed as unmapped",
+      "passedRuns": 3,
+      "totalRuns": 3,
+      "passRate": 1.0
+    },
+    {
+      "checkId": "CHK-14",
+      "name": "Requirement violation detected and classified as bug",
+      "passedRuns": 3,
+      "totalRuns": 3,
+      "passRate": 1.0
+    },
+    {
+      "checkId": "CHK-15",
+      "name": "report.md sections, IDs, counts, and recommendation match the JSON",
+      "passedRuns": 3,
+      "totalRuns": 3,
+      "passRate": 1.0
     }
   ]
 }
@@ -146,7 +167,7 @@ EVAL_RUN_DIRS="/tmp/ut-eval-run-1,/tmp/ut-eval-run-2,/tmp/ut-eval-run-3" EVAL_FI
 Agent output is non-deterministic, so `evals/` checks semantic properties and invariants rather than exact string snapshots:
 
 1. **`CHK-01` Schema & Envelope Validation (`schema.eval.test.ts`):**
-   - Validates `project.json`, `generation.json`, `generation.r*.json`, `review.json`, `failure-analysis.json`, and `failure-repair.json` against `schemas/*.schema.json` using Ajv (`ajv` + `ajv-formats`).
+   - Validates `project.json`, `requirements.json`, `generation.json`, `generation.r*.json`, `review.json`, `failure-analysis.json`, and `failure-repair.json` against `schemas/*.schema.json` using Ajv (`ajv` + `ajv-formats`).
    - Confirms `schemaVersion`, `agent`, `createdAt`, and `runId` (where applicable) are present.
 2. **`CHK-02` `project.json` Ground-Truth Match (`analyzer.eval.test.ts`):**
    - For `ts-vitest`: `language.value === "typescript"`, `testFramework.value === "vitest"`, `packageManager.value === "npm"`, `commands.test.value` contains `"vitest"`.
@@ -159,7 +180,7 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
 5. **`CHK-05` Coverage Accuracy (`coverage.eval.test.ts`):**
    - Executes the fixture's coverage command directly inside `EVAL_TARGET_DIR`, parses the resulting coverage summary report, and verifies that `generation.json`'s `coverage.achieved.lines` and `branches` match within `±2.0%`.
 6. **`CHK-06` Reviewer Referential Integrity (`reviewer.eval.test.ts`):**
-   - Asserts every `finding.caseId` in `review.json` exists in `generation.json`'s `testCases[].id`.
+   - Asserts every non-null `finding.caseId` in `review.json` exists in `generation.json`'s `testCases[].id`, and every non-null `finding.scenarioId` exists in `requirements.json`.
    - Asserts `flakinessCheck.reruns === 3`.
 7. **`CHK-07` Fix Mode Scope & Assertion Preservation (`fix-mode.eval.test.ts`):**
    - Compares `generation.json` and `generation.r1.json`: asserts `testFilesWritten` in `r1` is a subset of files flagged in `review.json`, and counts assertions (`expect(` / `assert `) in the modified test file to confirm assertion count did not decrease (unless a `duplicate_case` was explicitly removed).
@@ -175,6 +196,20 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
     - For a Workflow A run: asserts `generation.json` and `review.json` exist under one `<run-id>`, the count of `generation.r*.json` is at most `maxReviewRounds - 1` (default `2`), and no `generation.r*.json` was written after a `review.json` with `verdict: "approved"`.
     - For a Workflow B run: asserts `failure-analysis.json` and `failure-repair.json` share one `<run-id>`, and that `failure-repair.json` is absent when `analyzedFailures == 0`.
     - For a run with `project.json` removed: asserts no `runs/` directory and no `project.json` were created (the analyzer was not invoked).
+    - For a Workflow A run with `--req-file`: asserts `requirements.json`, `generation.json`, and `review.json` share one `<run-id>` and `generation.json` has `requirementsFile: "requirements.json"`.
+    - For every completed workflow: asserts `report.md` exists under the `<run-id>`.
+13. **`CHK-13` Requirement Traceability (`requirements.eval.test.ts`):**
+    - Asserts every `SCN` in `requirements.json` is the `scenarioId` of at least one test case or appears in `unmappedScenarios`, and every non-null `scenarioId` in the generation file exists in `requirements.json`.
+    - Asserts the fixture's planted ambiguity (rounding / negative stock) produced at least one `UNC` item.
+14. **`CHK-14` Requirement Violation Detection (`requirements.eval.test.ts`):**
+    - For `discount.ts` / `restock.py`: asserts at least one `suspectedDefects` entry has a non-null `scenarioId` for the threshold requirement, its test is skipped/expected-fail, and the test asserts the **requirement's** value (e.g., `10` for `calculateDiscount(100)`), not the code's value.
+    - Asserts `review.json` `requirementCompliance.results` classifies that requirement as `bug`.
+    - For a run without requirements: asserts `requirementCompliance.status === "not_assessed"` and every `scenarioId` is `null`.
+15. **`CHK-15` Report Consistency (`report.eval.test.ts`):**
+    - Asserts `report.md` has the headings `Summary`, `Actions`, and `Reproduce`, plus `For developers` and `For QA` (generate workflow) or `Failure triage` (failure workflow).
+    - Asserts every `DEF-`, `REQ-`, `SCN-`, `UNC-`, and `TC-` ID in the report exists in the run's JSON files, and every defect and unclear ID in the JSON appears in the report.
+    - Recomputes the headline recommendation from the F14 recommendation table and asserts the report's headline matches.
+    - For a run without requirements: asserts the no-requirements banner is present.
 
 ---
 
@@ -188,6 +223,6 @@ Agent output is non-deterministic, so `evals/` checks semantic properties and in
 ## 6. Acceptance Criteria Checklist
 
 - [ ] `evals/` is a standalone TypeScript + Vitest package with zero coupling to user-installed agent files.
-- [ ] Implements all 12 property checks (`CHK-01` through `CHK-12`) covering all 4 agents, all 3 generator modes, and the orchestrator.
+- [ ] Implements all 15 property checks (`CHK-01` through `CHK-15`) covering all 6 agents, all 3 generator modes, and the orchestrator.
 - [ ] Includes unit self-tests (using mock run directories) so `npm --prefix evals test:self` verifies the evaluator logic itself.
 - [ ] Supports evaluating multiple run directories and reporting a pass rate across runs.

@@ -83,11 +83,12 @@
 <main>
 
 <header>
-  <span class="status">Status (2026-10-22): specs &amp; plans approved · implementation not started</span>
+  <span class="status">Status (2026-11-05): specs &amp; plans approved · requirement analysis and run report added · implementation not started</span>
   <h1>Unit Test AI Agents: what this project delivers</h1>
-  <p class="lede">Four AI coding agents that analyze a repository, write unit tests, review them, and repair failing tests, plus an orchestrator that runs each workflow from a single command. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions: there are no scripts and no install step beyond copying files.</p>
+  <p class="lede">Six AI coding agents that analyze a repository, turn Jira requirements into test scenarios, write unit tests, review them against the requirements, repair failing tests, and write a report for developers and QA, plus an orchestrator that runs each workflow from a single command. They use the repository's own test tools and run in Claude Code, OpenAI Codex CLI, Gemini CLI, and GitHub Copilot. The agents are plain Markdown instructions: there are no scripts and no install step beyond copying files.</p>
   <nav class="toc" aria-label="Sections">
     <a href="#workflows">Workflows</a>
+    <a href="#requirements">Requirements &amp; report</a>
     <a href="#agents">Agents</a>
     <a href="#guardrails">Guardrails</a>
     <a href="#failures">Failure triage</a>
@@ -98,12 +99,12 @@
     <a href="#roadmap">Roadmap</a>
   </nav>
   <div class="stats">
-    <div class="stat"><b>4 + 1</b><span>agents + orchestrator</span></div>
+    <div class="stat"><b>6 + 1</b><span>agents + orchestrator</span></div>
     <div class="stat"><b>3</b><span>generator modes</span></div>
     <div class="stat"><b>4</b><span>AI runtimes</span></div>
     <div class="stat"><b>6</b><span>language ecosystems</span></div>
-    <div class="stat"><b>5</b><span>JSON schemas</span></div>
-    <div class="stat"><b>12</b><span>automated output checks</span></div>
+    <div class="stat"><b>6</b><span>JSON schemas</span></div>
+    <div class="stat"><b>15</b><span>automated output checks</span></div>
   </div>
 </header>
 
@@ -126,17 +127,18 @@ flowchart LR
   <figure class="diagram">
     <pre class="mermaid">
 flowchart LR
-  U["/unit-test-orchestrator #lt;targets#gt;"] --> G
+  U["/unit-test-orchestrator #lt;targets#gt;<br/>[--jira KEY]"] --> Q
   subgraph O["orchestrator · one run-id"]
+    Q["requirement analyzer<br/>(isolated, optional)"] -->|requirements.json| G
     G["generator"] -->|generation.json| R["reviewer<br/>(fresh subagent)"]
     R -->|review.json| V{verdict}
     V -->|changes requested,<br/>rounds left| F["generator --fix"]
     F -->|generation.rN.json| R
+    V -->|approved or<br/>round cap reached| P["reporter"]
   end
-  V -->|approved| D(["Done"])
-  V -->|round cap reached| H(["Stop: findings listed<br/>for you to follow up"])
+  P -->|report.md| D(["Recommendation for<br/>developers, QA, BA"])
     </pre>
-    <figcaption>The review and fix loop stops at the first approval, or after <code>--max-review-rounds</code> reviews (default 3). The reviewer always runs in its own fresh subagent.</figcaption>
+    <figcaption>With <code>--jira</code> (or <code>--req-file</code>), the requirement analyzer runs first and never sees the code. The review and fix loop stops at the first approval, or after <code>--max-review-rounds</code> reviews (default 3). Every run ends with <code>report.md</code>.</figcaption>
   </figure>
 
   <h3>Workflow 2: diagnose and repair failing tests</h3>
@@ -147,9 +149,10 @@ flowchart LR
   subgraph O["orchestrator · one run-id"]
     A["failure-analyzer"] -->|failure-analysis.json| Z{failures?}
     Z -->|yes| R["generator<br/>--repair-failures"]
+    Z -->|none| P["reporter"]
+    R -->|failure-repair.json| P
   end
-  Z -->|none| OK(["All tests pass"])
-  R -->|failure-repair.json| S(["Summary: tests fixed, defects skipped,<br/>environment steps for you"])
+  P -->|report.md| S(["Tests fixed, defects skipped,<br/>environment steps for you"])
     </pre>
     <figcaption>Use this after a regression, a refactor, or a red CI build. The analyzer can run the tests itself or read an existing CI log.</figcaption>
   </figure>
@@ -159,11 +162,43 @@ flowchart LR
       <thead><tr><th>Workflow</th><th>One command</th><th>The same steps run by hand</th></tr></thead>
       <tbody>
         <tr><td>Setup</td><td><code>/codebase-analyzer</code></td><td>(not orchestrated)</td></tr>
-        <tr><td>1. Generate &amp; review</td><td><code>/unit-test-orchestrator &lt;targets&gt;</code></td><td><code>/unit-test-generator &lt;targets&gt;</code> → <code>/unit-test-reviewer &lt;run-id&gt;</code> → <code>/unit-test-generator --fix &lt;run-id&gt;</code></td></tr>
-        <tr><td>2. Diagnose &amp; repair</td><td><code>/unit-test-orchestrator --failures …</code></td><td><code>/unit-test-failure-analyzer …</code> → <code>/unit-test-generator --repair-failures &lt;run-id&gt;</code></td></tr>
+        <tr><td>1. Generate &amp; review</td><td><code>/unit-test-orchestrator &lt;targets&gt; [--jira &lt;keys&gt;]</code></td><td>[<code>/unit-test-requirement-analyzer --jira &lt;keys&gt;</code> →] <code>/unit-test-generator &lt;targets&gt; [--requirements &lt;run-id&gt;]</code> → <code>/unit-test-reviewer &lt;run-id&gt;</code> → <code>/unit-test-generator --fix &lt;run-id&gt;</code> → <code>/unit-test-reporter &lt;run-id&gt;</code></td></tr>
+        <tr><td>2. Diagnose &amp; repair</td><td><code>/unit-test-orchestrator --failures …</code></td><td><code>/unit-test-failure-analyzer …</code> → <code>/unit-test-generator --repair-failures &lt;run-id&gt;</code> → <code>/unit-test-reporter &lt;run-id&gt;</code></td></tr>
       </tbody>
     </table>
   </div>
+</section>
+
+<section id="requirements">
+  <h2>Requirements &amp; report: tests that check the business rule, not the code</h2>
+  <p>If tests are written only from the code, a wrong implementation produces tests that pass and lock in the wrong behavior. Example: the ticket says a 10% discount starts at $100, the code starts it above $200, and every code-derived test still passes. With requirements, expected results come from the ticket, and the reviewer compares ticket, tests, and code.</p>
+  <figure class="diagram">
+    <pre class="mermaid">
+flowchart LR
+  J[("Jira issue<br/>via MCP")] --> A["requirement analyzer<br/>never sees code"]
+  A -->|"REQ · SCN · UNC"| G["generator<br/>expected values from SCN"]
+  C[("source code")] --> G
+  G -->|tests + defects| R["reviewer<br/>sees all three"]
+  J -.-> R
+  C -.-> R
+  R -->|per requirement| K{"pass · bug ·<br/>test issue · unclear ·<br/>not covered"}
+  K --> P["report.md"]
+    </pre>
+    <figcaption>Requirements are optional. Without them, the implementation is treated as the requirement, and the report says the tests confirm current behavior, not business intent.</figcaption>
+  </figure>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Result per requirement</th><th>Meaning</th><th>Who acts</th></tr></thead>
+      <tbody>
+        <tr><td><span class="chip ok">pass</span></td><td>Every scenario has a passing test with the requirement's expected value</td><td>No one</td></tr>
+        <tr><td><span class="chip bad">bug</span></td><td>The test matches the requirement, but the code does not; the test is kept and skipped as a defect</td><td>Developer</td></tr>
+        <tr><td><span class="chip warn">test issue</span></td><td>A scenario has no test, or a test asserts the code's value instead of the requirement's</td><td>Generator (<code>--fix</code>)</td></tr>
+        <tr><td><span class="chip warn">unclear</span></td><td>The requirement does not say what should happen</td><td>BA / PO</td></tr>
+        <tr><td><span class="chip warn">not covered</span></td><td>No code in the given targets implements it</td><td>QA</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p><code>report.md</code> opens with one recommendation (for example "Do not merge. Fix production code"), then a scorecard, the defects to fix with file and line, a requirement → scenario → test traceability table for QA, and the questions for the BA. It is plain Markdown, so CI can post it to a pull request.</p>
 </section>
 
 <section id="agents">
@@ -190,6 +225,7 @@ flowchart LR
       <div class="cmd">/unit-test-generator &lt;targets&gt;</div>
       <ul>
         <li>Writes happy-path, edge, boundary, and error test cases</li>
+        <li>With <code>--requirements</code>, takes every expected value from the requirement scenarios, not from the code</li>
         <li>Copies the style of your existing test files</li>
         <li>Fixes its own broken tests, up to a set number of attempts</li>
         <li>Keeps adding tests until the coverage thresholds are met</li>
@@ -215,7 +251,8 @@ flowchart LR
       <div class="cmd">/unit-test-reviewer &lt;run-id&gt;</div>
       <ul>
         <li>Runs in a fresh subagent, so it starts without the generator's reasoning</li>
-        <li>Checks every test case against a 7-point rubric</li>
+        <li>Checks every test case against a 9-point rubric</li>
+        <li>Rates each requirement as pass, bug, test issue, unclear, or not covered</li>
         <li>Runs mutation testing on the target files when a mutation tool is configured</li>
         <li>Runs the new tests 3 times to catch flaky ones</li>
         <li>Never edits code</li>
@@ -258,7 +295,32 @@ flowchart LR
         <li>Stops at the first failed step and says which one failed</li>
         <li>Never runs the analyzer, and has no rules of its own for writing or judging tests</li>
       </ul>
-      <div class="out">Writes nothing itself; prints a final summary</div>
+      <div class="out">Writes nothing itself; ends every workflow with the reporter</div>
+    </article>
+    <article class="card">
+      <span class="id">F13</span>
+      <h3>Requirement Analyzer</h3>
+      <div class="cmd">/unit-test-requirement-analyzer --jira KEY</div>
+      <ul>
+        <li>Reads Jira issues through the Jira MCP server (or exported files with <code>--req-file</code>)</li>
+        <li>Runs in an isolated subagent and never reads source or test code</li>
+        <li>Extracts business rules and boundary scenarios with expected results</li>
+        <li>Turns ambiguities into questions instead of guessing</li>
+        <li>Never writes to Jira</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/requirements.json</code></div>
+    </article>
+    <article class="card">
+      <span class="id">F14</span>
+      <h3>Reporter</h3>
+      <div class="cmd">/unit-test-reporter &lt;run-id&gt;</div>
+      <ul>
+        <li>One recommendation with an owner: developer, QA, or BA</li>
+        <li>Defects to fix, with file, line, and the test to re-enable</li>
+        <li>Requirement traceability and open questions for QA and BA</li>
+        <li>Only renders the run's JSON; adds no findings of its own</li>
+      </ul>
+      <div class="out">Writes <code>runs/&lt;id&gt;/report.md</code></div>
     </article>
   </div>
 
@@ -287,6 +349,7 @@ flowchart TD
     <li><b>Production code is never modified.</b> Agents write only under the configured test folders and <code>.unit-test-agent/</code>.</li>
     <li><b>Failing tests are never "fixed" by weakening them.</b> An agent never deletes or loosens an assertion, and never changes an expected value to match buggy output.</li>
     <li><b>Bugs found in your code are reported.</b> The agent keeps the correct assertion, marks the test as skipped or expected-to-fail using the framework's own mechanism, and records the bug in <code>suspectedDefects</code> with the expected and actual behavior.</li>
+    <li><b>Expected results come from the requirement, not the code.</b> When requirements are given, tests assert what the ticket says; the requirement analyzer never reads code and never writes to Jira.</li>
     <li><b>Agents check before they act.</b> If configuration is missing, a schema version is unsupported, or a blocking question is unanswered, the agent stops and tells you what to do.</li>
     <li><b>Every output can be traced.</b> Each JSON file records its schema version, the agent that wrote it, a timestamp, and a run ID.</li>
   </ul>
@@ -326,7 +389,7 @@ flowchart LR
 
 <section id="review">
   <h2>Review rubric</h2>
-  <p>The reviewer checks every test case against seven criteria and rates each finding critical, major, or minor. It requests changes if any finding is critical or major, if any test is flaky, or if a mutant survives that a test could have caught.</p>
+  <p>The reviewer checks every test case against nine criteria and rates each finding critical, major, or minor. It requests changes if any finding is critical or major, if any test is flaky, or if a mutant survives that a test could have caught.</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>#</th><th>Criterion</th><th>What it catches</th></tr></thead>
@@ -338,6 +401,8 @@ flowchart LR
         <tr><td>5</td><td><code>non_determinism</code></td><td>Real clocks, unseeded randomness, real network or file I/O, or state shared between tests</td></tr>
         <tr><td>6</td><td><code>weak_or_tautological_assertion</code></td><td>Assertions like <code>toBeDefined()</code> or <code>assert True</code>, or checking that a mock returns what it was set up to return</td></tr>
         <tr><td>7</td><td><code>naming_and_style_mismatch</code></td><td>Tests that do not follow the conventions of your existing test files</td></tr>
+        <tr><td>8</td><td><code>missing_requirement_scenario</code></td><td>A requirement scenario that no test checks</td></tr>
+        <tr><td>9</td><td><code>expected_value_mirrors_implementation</code></td><td>A test that asserts what the code returns instead of what the requirement says</td></tr>
       </tbody>
     </table>
   </div>
@@ -379,8 +444,8 @@ flowchart LR
     <pre class="mermaid">
 flowchart LR
   subgraph canon[".unit-test-agent/"]
-    AG["agents/*.md<br/>(4 agents + orchestrator)"]
-    SC["schemas/*.schema.json<br/>(5 contracts)"]
+    AG["agents/*.md<br/>(6 agents + orchestrator)"]
+    SC["schemas/*.schema.json<br/>(6 contracts)"]
   end
   CL[".claude/ commands + subagent"] --> AG
   CX[".agents/skills + .codex/agents"] --> AG
@@ -398,8 +463,9 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
 ├── schemas/           # JSON contracts (commit)
 ├── project.json       # written by the analyzer; edit freely (commit)
 └── runs/&lt;run-id&gt;/     # per-run reports (optionally gitignored)
-    ├── generation.json · generation.r1.json · review.json
-    └── failure-analysis.json · failure-repair.json</pre>
+    ├── requirements.json · generation.json · generation.r1.json · review.json
+    ├── failure-analysis.json · failure-repair.json
+    └── report.md      # the human-readable result</pre>
   <p>You can tune <code>project.json</code>, for example the coverage thresholds (up to 100%) and <code>maxRepairAttempts</code>. Running the analyzer again keeps your edits.</p>
 </section>
 
@@ -410,7 +476,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <span class="id">F07</span>
       <h3>JSON contracts</h3>
       <ul>
-        <li>5 JSON Schema (Draft 2020-12) files, one per output type</li>
+        <li>6 JSON Schema (Draft 2020-12) files, one per output type</li>
         <li>Strict: an unknown field fails validation, so a typo in a field name is caught</li>
         <li>Every detected value records a confidence level and its evidence</li>
       </ul>
@@ -421,6 +487,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <ul>
         <li><code>examples/ts-vitest</code> and <code>examples/py-pytest</code></li>
         <li>Each one contains a deliberate bug, an unreachable guard, and seeded failing tests (one stale test and one real regression)</li>
+        <li>Each one has a requirement file and a module whose code and docs agree but break that requirement</li>
         <li>Includes a sample CI log and a manual test procedure</li>
       </ul>
     </article>
@@ -429,7 +496,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <h3>Automated output checks</h3>
       <ul>
         <li>A Vitest package for contributors that inspects the outputs and git state after a run</li>
-        <li>Runs the same 12 checks for every runtime</li>
+        <li>Runs the same 15 checks for every runtime</li>
         <li>Reports the pass rate across repeated runs</li>
       </ul>
     </article>
@@ -437,7 +504,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
       <span class="id">F08 · F10</span>
       <h3>Packaging &amp; user guide</h3>
       <ul>
-        <li>Thin wrappers for all 4 agents and the orchestrator in all 4 runtimes</li>
+        <li>Thin wrappers for all 6 agents and the orchestrator in all 4 runtimes</li>
         <li>A README with installation commands for each runtime, both workflows, and how to customize the agents</li>
       </ul>
     </article>
@@ -458,6 +525,9 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
         <tr><td>CHK-10</td><td>Running the analyzer again keeps manual edits to <code>project.json</code></td></tr>
         <tr><td>CHK-11</td><td>A blocking question in <code>project.json</code> stops the downstream agents</td></tr>
         <tr><td>CHK-12</td><td>The orchestrator respects the review-round cap and never runs the analyzer</td></tr>
+        <tr><td>CHK-13</td><td>Every requirement scenario has a test or is listed as not implemented in the targets</td></tr>
+        <tr><td>CHK-14</td><td>A requirement violation is caught, its test asserts the requirement's value, and the reviewer rates it a bug</td></tr>
+        <tr><td>CHK-15</td><td><code>report.md</code> has every section, and its IDs, counts, and recommendation match the JSON</td></tr>
       </tbody>
     </table>
   </div>
@@ -467,10 +537,10 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
   <h2>Delivery roadmap</h2>
   <p>The work is ordered so that each piece can be tested as soon as it is built. The schemas and fixtures come first, then the automated checks, then the agents that the checks verify, and then the orchestrator that runs them.</p>
   <div class="roadmap">
-    <div class="phase"><b>Contracts</b><span>F07: 5 JSON schemas</span></div>
+    <div class="phase"><b>Contracts</b><span>F07: 6 JSON schemas</span></div>
     <div class="phase"><b>Fixtures</b><span>F09: TS + Python sample repos</span></div>
-    <div class="phase"><b>Verifier</b><span>F11: 12 automated checks</span></div>
-    <div class="phase"><b>Agents</b><span>F01–F06: 4 agents, 3 generator modes</span></div>
+    <div class="phase"><b>Verifier</b><span>F11: 15 automated checks</span></div>
+    <div class="phase"><b>Agents</b><span>F01–F06, F13, F14: 6 agents, 3 generator modes</span></div>
     <div class="phase"><b>Orchestrator</b><span>F12: one command per workflow</span></div>
     <div class="phase"><b>Runtimes</b><span>F08: wrappers for Claude, Codex, Gemini, Copilot</span></div>
     <div class="phase"><b>End-to-end</b><span>Each agent verified on each runtime</span></div>
@@ -480,7 +550,7 @@ cp -r runtimes/claude/.claude &lt;repo&gt;/          # or codex / gemini / copil
 </section>
 
 <footer>
-  Sources: <a href="../features/">docs/features/</a> (F01–F12) · <a href="../decisions/ADR-001-packaging.md">ADR-001</a> · <a href="../runtime-compatibility.md">runtime-compatibility.md</a>.<br>
+  Sources: <a href="../features/">docs/features/</a> (F01–F14) · <a href="../decisions/ADR-001-packaging.md">ADR-001</a> · <a href="../runtime-compatibility.md">runtime-compatibility.md</a>.<br>
   To add a diagram, add a <code>&lt;pre class="mermaid"&gt;</code> block. It renders automatically.
 </footer>
 
