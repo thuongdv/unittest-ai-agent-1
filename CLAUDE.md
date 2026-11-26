@@ -13,3 +13,4 @@
 3. **After every completed task:**
    - Update task status and changelog in [`PROGRESS.md`](PROGRESS.md).
    - Commit with a Conventional Commit message (`feat:`, `docs:`, `test:`, `chore:`).
+4. **`main` is protected — never push to it.** Work on a branch and open a PR (see "Branch & PR Workflow" in `AGENTS.md`). Ruleset changes go through [`.github/rulesets/`](.github/rulesets/).
