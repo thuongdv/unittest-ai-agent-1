@@ -43,3 +43,18 @@ Every session working on this repository **MUST** begin with these steps:
 2. Mark the task `in-progress` in [`PROGRESS.md`](PROGRESS.md) when starting.
 3. Verify the task against all acceptance criteria in `docs/features/FXX-*.md` and `docs/plans/FXX-plan.md`.
 4. Mark the task `done` in [`PROGRESS.md`](PROGRESS.md), append an entry to the dated **Changelog**, and commit using a Conventional Commit message (e.g., `feat(schemas): add project, generation, and review JSON schemas`).
+
+### Branch & PR Workflow
+
+`main` is protected (no direct pushes, no force-push, no deletion). Every change lands via pull request.
+
+1. Branch from latest `main` before the first edit: `<type>/<short-slug>` (e.g., `feat/f01-schemas`, `docs/pr-workflow`).
+2. Commit on the branch, push it, and open a PR to `main` with `gh pr create`. Title = the Conventional Commit message.
+3. Merge only after the user approves. Then delete the branch and pull `main`.
+
+### Repository Rulesets
+
+- Rulesets are versioned in [`.github/rulesets/`](.github/rulesets/); the file is the source of truth. GitHub does not sync it automatically.
+- To change a rule: edit the JSON in a PR, then after merge apply it (admin only):
+  `gh api -X PUT repos/thuongdv/unittest-ai-agent-1/rulesets/<id> --input .github/rulesets/<file>.json`
+  (find `<id>` with `gh api repos/thuongdv/unittest-ai-agent-1/rulesets`; for a new file use `-X POST .../rulesets`).
